@@ -1,0 +1,259 @@
+<script type="text/x-red" data-template-name="postgres-config">
+
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i><span>Name</span></label>
+    <input type="text" id="node-config-input-name" placeholder="name">
+  </div>
+  
+  <div class="form-row">
+    <ul style="min-width: 600px; margin-bottom: 20px;" id="config-tabs"></ul>
+  </div>
+  
+  <div id="config-tabs-content" style="min-height: 170px;">
+   
+   <div id="config-tab-config" style="display: none;">
+      
+	  <div class="form-row">
+        <label for="node-config-input-host"><i class="fa fa-server"></i> <span>Server</span></label>
+        <input class="input-append-left" type="text" id="node-config-input-host" placeholder="database.domain.com">
+	  </div>
+	  
+	  <div class="form-row">
+        <label for="node-config-input-port"><i class="fa fa-server"></i> <span>Port</span></label>
+        <input class="input-append-left" type="text" id="node-config-input-port" placeholder="5432" style="width: 135px;">
+      </div>
+	  
+	  <div class="form-row">
+		<label for="node-config-input-ssl"><i class="fa fa-server"></i> <span>SSL</span></label>
+		<input type="checkbox" id="node-config-input-ssl" style=" width: auto;">
+       </div>
+	  
+	  <div class="form-row">
+        <label for="node-config-input-db"><i class="fa fa-database"></i> <span>Database</span></label>
+        <input type="text" id="node-config-input-db" placeholder="database">
+      </div>
+	  
+	  <div class="form-row">
+        <label for="node-config-input-user"><i class="fa fa-user"></i> <span>User</span></label>
+        <input type="text" id="node-config-input-user" placeholder="username">
+      </div>
+	  
+      <div class="form-row">
+        <label for="node-config-input-password"><i class="fa fa-lock"></i> <span>Password</span></label>
+        <input type="password" id="node-config-input-password" placeholder="password">
+      </div>
+
+    </div>
+	<div id="config-tab-options" style="display: none;">
+	  <div class="form-row">
+        <label for="node-config-input-maxconnections" style="width: 200px;"><i class="fa fa-link"></i> <span>Max. number of connections</span></label>
+        <input type="number" id="node-config-input-maxconnections" min="1" max="100" step="1" placeholder="10" style="width: 100px;">
+      </div>
+	  
+	  <div class="form-row">
+        <label for="node-config-input-idletimeout" style="width: 200px;"><i class="fa fa-chain-broken"></i> <span>Idle connection timeout (s)</span></label>
+        <input type="number" id="node-config-input-idletimeout" min="0" max="60" step="1" placeholder="0" style="width: 100px;">
+      </div>
+	  
+	  <div class="form-row">
+        <label for="node-config-input-connectiontimeout" style="width: 200px;"><i class="fa fa-chain-broken"></i> <span>Connection timeout (s)</span></label>
+        <input type="number" id="node-config-input-connectiontimeout" min="0" max="600" step="1" placeholder="30" style="width: 100px;">
+      </div>
+	   </div>
+  </div>
+</script>
+
+<script type="text/javascript">
+RED.nodes.registerType('postgres-config', {
+  category: "config",
+  color: "#fe4c00",
+  defaults: {
+    name: {
+	  value: ""
+    },
+    host: {
+      value: "",
+      required: true
+    },
+    port: {
+      value: 5432,
+      required: true
+    },
+    ssl: {
+      value: false
+    },
+	db: {
+      value: "",
+      required: true
+    },
+	maxconnections: {
+      value: 10,
+      required: true
+    },
+	idletimeout: {
+      value: 0,
+      required: true
+    },
+	connectiontimeout: {
+      value: 30,
+      required: true
+    }
+  },
+  credentials: {
+    user: {
+      type: "text"
+    },
+    password: {
+      type: "password"
+    }
+  },
+  label: function() {
+    if(!this.name) {
+      this.name =   this.host + "/" + this.db + " | " + this.credentials.user;
+    } 
+    return this.name;
+  },
+  labelStyle: function() {
+    return this.name ? "node_label_italic" : "";
+  },
+  oneditprepare: function() {
+  
+  	$('#node-config-input-maxconnections').on('change', function() {
+		if(!$.isNumeric($(this).val())) { $(this).val(10) } else {
+			if($(this).val() > 100 || $(this).val() < 1 ) { $(this).val(10) } 
+		}
+	})
+	
+	$('#node-config-input-idletimeout').on('change', function() {
+		if(!$.isNumeric($(this).val())) { $(this).val(0) } else {
+			if($(this).val() > 60 || $(this).val() < 0 ) { $(this).val(0) } 
+		}
+	})
+	
+	$('#node-config-input-connectiontimeout').on('change', function() {
+		if(!$.isNumeric($(this).val())) { $(this).val(30) } else {
+			if($(this).val() > 600 || $(this).val() < 0 ) { $(this).val(30) } 
+		}
+	})
+  
+    const tabs = RED.tabs.create({
+      id: "config-tabs",
+      onchange: function(tab) {
+        $("#config-tabs-content").children().hide();
+        $("#" + tab.id).show();
+      }
+    })
+	
+    tabs.addTab({
+		id: "config-tab-config",
+		label: "Connection"
+	})
+	
+    tabs.addTab({
+		id: "config-tab-options",
+		label: "Options"
+	})	
+
+  }
+});
+</script>
+
+<script type="text/x-red" data-template-name="postgres-client">
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i><span>Name</span></label>
+    <input type="text" id="node-input-name" placeholder="name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-configuration"><i class="fa fa-globe"></i><span> Connection</span></label>
+    <input type="text" id="node-input-configuration">
+  </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('postgres-client',{
+    category: 'TF collection',
+	color: '#fe4c00',
+	defaults: {
+    name: {
+      value: ""
+    },
+    configuration: {
+      type: "postgres-config",
+      required: true
+    },
+    output: {
+      value: true
+    },
+    outputs: {
+      value: 1
+    }
+  },
+  inputs: 1,
+  icon: "db.svg",
+  align: "left",
+  label: function() {
+    return this.name || "postgres";
+  },
+  paletteLabel: function() {
+    return this.name || "postgres";
+  },
+  labelStyle: function() {
+    return this.name ? "node_label_italic" : "";
+  }
+});
+</script>
+
+<script type="text/html" data-help-name="postgres-client">
+    <p>Connect to Postgres database.</p>
+
+	<p>You must configure Connection before using this node.</p>
+	
+	<h3>Connection configuration</h3>
+		<dl class="message-properties">
+			<dt class="optional">Name (optional)<span class="property-type">string</span></dt><dd> enter a name or it will be generated on first save</dd>
+			<dt>Server (required)<span class="property-type">string</span></dt><dd> enter the hostname of server or IP address</dd>
+			<dt>Port (required)<span class="property-type">number</span></dt><dd> enter the port number to connect</dd>
+			<dt>TLS (optional)<span class="property-type">checkbox - yes/no</span></dt><dd> if checked, the connection will use TLS when connecting to the server</dd>
+			<dt>Database (required)<span class="property-type">string</span></dt><dd> enter the database</dd>
+			<dt>User (required)<span class="property-type">string</span></dt><dd> enter the username</dd>
+			<dt>Password (required)<span class="property-type">string</span></dt><dd> enter the user's password</dd>
+			<dt>Max. number of connections (required)<span class="property-type">number</span></dt><dd> enter the value between 1 a 100, default is 10</dd>
+			<dt>Idle connection timeout (s)(required)<span class="property-type">number</span></dt><dd> enter the value between 0 a 60, default is 0</dd>
+			<dt>Connection timeout (s)(required)<span class="property-type">number</span></dt><dd> enter the value between 1 a 600, default is 30</dd>
+		</dl>
+	
+	<h3>Input - message</h3>
+		<dl class="message-properties">
+			<dd> You can send SQL commands in two ways described below</dd>
+			<dt>msg.payload (required)<span class="property-type">string</span></dt><dd> SQL command(s)</dd>
+			<dd>&nbsp;</dd>
+			<dd> You can send one SQL command, for example</dd>
+			<dd> UPDATE users SET phone = '+420222551500' WHERE id = 15</dd>
+			<dd>&nbsp;</dd>
+			<dd> or multiple commands separated by a semicolon</dd>
+			<dd>SELECT * FROM users WHERE id = 15; SELECT * FROM groups WHERE group_name = 'accounting'</dd>
+			<dd>&nbsp;</dd>
+		</dl>
+		 
+	 <h3>Output - message</h3>
+		 <dl class="message-properties">
+			<dt>msg.payload<span class="property-type">string | object</span></dt><dd> the standard output from postgres server</dd>
+		 	<dt>msg.count<span class="property-type">number</span></dt><dd> the count of record or count of arrays</dd>
+		 	<dt>msg.error<span class="property-type">string</span></dt><dd> the error from postgres client or server</dd>
+			<dd>&nbsp;</dd>
+			<dd>If you send one command you will get a response in <code>msg.payload</code> as an array of records and number of records in <code>msg.count</code></dd>
+			<dd>&nbsp;</dd>
+			<dd>If you send multiple commands you will get a response in <code>msg.payload</code> as an array of arrays and number of arrays in <code>msg.count</code></dd>
+			<dd>&nbsp;</dd>
+			<dd>If you send a command that do not return values, you will get a response in <code>msg.payload</code> as empty array and number of records in <code>msg.count</code> will be 0</dd>
+			<dd>&nbsp;</dd>
+			<dd>If any error postgres client or server occurs, it will be sent in <code>msg.error</code></dd>
+			<dd>&nbsp;</dd>
+		 </dl>
+
+	<h3>References</h3>
+		<ul>
+			<li><a href="https://teamogy.com/teamogy-flow">Teamogy Flow docs</a> - full description of Teamogy Flow</li>
+			<li><a href="https://www.postgresql.org/docs/">PostgreSQL docs</a> - full description of PostgreSQL</li>
+		</ul>
+</script>
