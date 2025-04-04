@@ -1,5 +1,5 @@
 {
-  "name": "tf-email",
+  "name": "node-red-contrib-teamogy-email",
   "version": "0.0.1",
   "description": "",
   "scripts": {
