@@ -1,5 +1,5 @@
 {
-  "name": "tf-postgres",
+  "name": "node-red-contrib-teamogy-postgres",
   "version": "0.0.1",
   "description": "",
   "scripts": {
