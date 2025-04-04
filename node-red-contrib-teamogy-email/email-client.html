@@ -1,0 +1,232 @@
+<script type="text/x-red" data-template-name="email-config">
+
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i><span>Name</span></label>
+    <input type="text" id="node-config-input-name" placeholder="name">
+  </div>
+  
+  <div class="form-row">
+    <ul style="min-width: 600px; margin-bottom: 20px;" id="config-tabs"></ul>
+  </div>
+  
+  <div id="config-tabs-content" style="min-height: 170px;">
+   
+   <div id="config-tab-config" style="display: none;">
+      
+	  <div class="form-row">
+        <label for="node-config-input-host"><i class="fa fa-server"></i> <span>Server</span></label>
+        <input class="input-append-left" type="text" id="node-config-input-host" placeholder="smtp.domain.com">
+	  </div>
+	  
+	  <div class="form-row">
+        <label for="node-config-input-port"><i class="fa fa-server"></i> <span>Port</span></label>
+        <input class="input-append-left" type="text" id="node-config-input-port" placeholder="587" style="width: 135px;">
+      </div>
+	  
+      <div class="form-row">
+		<label for="node-config-input-ssl"><i class="fa fa-server"></i> <span>TLS</span></label>
+		<input type="checkbox" id="node-config-input-ssl" style=" width: auto;">
+       </div>
+	  
+	  <div class="form-row">
+        <label for="node-config-input-user"><i class="fa fa-user"></i> <span>User</span></label>
+        <input type="text" id="node-config-input-user" placeholder="username">
+      </div>
+	  
+      <div class="form-row">
+        <label for="node-config-input-password"><i class="fa fa-lock"></i> <span>Password</span></label>
+        <input type="password" id="node-config-input-password" placeholder="password">
+      </div>
+
+    </div>
+	   
+  </div>
+</script>
+
+<script type="text/javascript">
+RED.nodes.registerType('email-config', {
+  category: "config",
+  color: "#fe4c00",
+  defaults: {
+    name: {
+      value: ""
+    },
+    host: {
+      value: "",
+      required: true
+    },
+    port: {
+      value: 587,
+      required: true
+    },
+    ssl: {
+      value: false
+    }
+  },
+  credentials: {
+    user: {
+      type: "text"
+    },
+    password: {
+      type: "password"
+    }
+  },
+  label: function() {
+    if(!this.name) {
+      this.name = this.credentials.user + " | " + this.host + ":" + this.port;
+    } 
+    return this.name;
+  },
+  labelStyle: function() {
+    return this.name ? "node_label_italic" : "";
+  },
+  oneditprepare: function() {
+    const tabs = RED.tabs.create({
+      id: "config-tabs",
+      onchange: function(tab) {
+        $("#config-tabs-content").children().hide();
+        $("#" + tab.id).show();
+      }
+    });
+    tabs.addTab({
+      id: "config-tab-config",
+      label: "Connection"
+    });
+  }
+});
+</script>
+
+<script type="text/x-red" data-template-name="email-client">
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i><span>Name</span></label>
+    <input type="text" id="node-input-name" placeholder="name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-configuration"><i class="fa fa-globe"></i><span> Connection</span></label>
+    <input type="text" id="node-input-configuration">
+  </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('email-client',{
+    category: 'TF collection',
+	color: '#fe4c00',
+	defaults: {
+    name: {
+      value: ""
+    },
+    configuration: {
+      type: "email-config",
+      required: true
+    },
+    output: {
+      value: true
+    },
+    outputs: {
+      value: 1
+    }
+  },
+  inputs: 1,
+  icon: "envelope.svg",
+  align: "left",
+  label: function() {
+    return this.name || "email";
+  },
+  paletteLabel: function() {
+    return this.name || "email";
+  },
+  labelStyle: function() {
+    return this.name ? "node_label_italic" : "";
+  }
+});
+</script>
+
+<script type="text/html" data-help-name="email-client">
+    <p>Connect to SMTP server and send emails.</p>
+
+	<p>You must configure Connection before using this node.</p>
+	
+	<h3>Connection configuration</h3>
+		<dl class="message-properties">
+			<dt class="optional">Name (optional)<span class="property-type">string</span></dt><dd> you can enter a name or it will be generated on first save</dd>
+			<dt>Server (required)<span class="property-type">string</span></dt><dd> enter the hostname of server or IP address</dd>
+			<dt>Port (required)<span class="property-type">number</span></dt><dd> enter the port number to connect</dd>
+			<dt>TLS (optional)<span class="property-type">checkbox - yes/no</span></dt><dd> if checked, the connection will use TLS when connecting to the server. If unchecked (default), then TLS is used if the server supports the STARTTLS extension. In most cases, set this value to checked if you are connecting to port 465. For port 587 or 25, leave the value unchecked</dd>
+			<dt>User (required)<span class="property-type">string</span></dt><dd> enter the username</dd>
+			<dt>Password (required)<span class="property-type">string</span></dt><dd> enter the user's password</dd>
+		</dl>
+	
+	<h3>Input - message</h3>
+		<dl class="message-properties">
+			<dd> Due to backward compatibility with other nodes, it is possible to send parameter values ​​in the input message in several ways described below, the first parameter value is always used in the order as they are listed, individual ways can be combined in one input message in any way</dd>
+			<dt>msg.from | msg.payload.from | msg.email.from (required)<span class="property-type">string</span></dt><dd> email address of the sender, format: email address</dd>
+			<dt>msg.to | msg.payload.to | msg.email.to (required)<span class="property-type">string</span></dt><dd> email address of recipient, format: email address, multiple recipients separated by a comma</dd>
+			<dt>msg.cc | msg.payload.cc | msg.email.cc (optional)<span class="property-type">string</span></dt><dd> email address of recipient of carbon copy, format: email address, multiple recipients separated by a comma</dd>
+			<dt>msg.bcc | msg.payload.bcc | msg.email.bcc (optional)<span class="property-type">string</span></dt><dd> email address of recipient of blind carbon copy, format: email address, multiple recipients separated by a comma</dd>
+			<dt>msg.replyTo | msg.payload.replyTo | msg.email.replyTo (optional)<span class="property-type">string</span></dt><dd> email address reply-to-address format: email address, multiple recipients separated by a comma</dd>
+			<dt>msg.subject | msg.payload.subject | msg.email.subject | msg.topic (required)<span class="property-type">string</span></dt><dd> text of subject as an Unicode string</dd>
+			<dd>&nbsp;</dd>
+			<dd> You can use the following two parameters for the email body content, with html taking precedence over text</dd>
+			<dt>msg.text | msg.payload.text | msg.email.text (optional)<span class="property-type">string</span></dt><dd> the body text of the email in plaintext as an Unicode string</dd>
+			<dt>msg.html | msg.payload.html | msg.email.html | msg.payload (optional)<span class="property-type">string</span></dt><dd> the body text of the email in HTML format as an Unicode string</dd>
+			<dd>&nbsp;</dd>
+			<dt>msg.attachments | msg.payload.attachments | msg.email.attachments (optional)<span class="property-type">array of objects</span></dt><dd> array of objects, see examples below</dd>
+			<dd>&nbsp;</dd>
+			<dd> Examples:</dd>
+			<dd>attachments: [</dd>
+			<dd>&nbsp;&nbsp;{   // utf-8 string as an attachment</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;filename: 'text1.txt',</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;content: 'file content text'</dd>
+			<dd>&nbsp;&nbsp;},</dd>
+			<dd>&nbsp;&nbsp;{   // binary buffer as an attachment</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;filename: 'text2.txt',</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;content: new Buffer('file content text','utf-8')</dd>
+			<dd>&nbsp;&nbsp;},</dd>
+			<dd>&nbsp;&nbsp;{   // file on disk as an attachment</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;filename: 'text3.txt',</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;path: '/path/to/file.txt' // stream this file</dd>
+			<dd>&nbsp;&nbsp;},</dd>
+			<dd>&nbsp;&nbsp;{   // filename and content type is derived from path</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;path: '/path/to/file.txt'</dd>
+			<dd>&nbsp;&nbsp;},</dd>
+			<dd>&nbsp;&nbsp;{   // stream as an attachment</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;filename: 'text4.txt',</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;content: fs.createReadStream('file.txt')</dd>
+			<dd>&nbsp;&nbsp;},</dd>
+			<dd>&nbsp;&nbsp;{   // define custom content type for the attachment</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;filename: 'text.bin',</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;content: 'file content text',</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;contentType: 'text/plain'</dd>
+			<dd>&nbsp;&nbsp;},</dd>
+			<dd>&nbsp;&nbsp;{   // use URL as an attachment</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;filename: 'license.txt',</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;path: 'https://readme.teamogy.com/docs/licence'</dd>
+			<dd>&nbsp;&nbsp;},</dd>
+			<dd>&nbsp;&nbsp;{   // encoded string as an attachment</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;filename: 'text1.txt',</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;content: 'VGVhbW9neSBGbG93',</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;encoding: 'base64'</dd>
+			<dd>&nbsp;&nbsp;},</dd>
+			<dd>&nbsp;&nbsp;{   // data uri as an attachment</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;path: 'data:text/plain;base64,VGVhbW9neSBGbG93'</dd>
+			<dd>&nbsp;&nbsp;},</dd>
+			<dd>&nbsp;&nbsp;{</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;// use pregenerated MIME node</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;raw: 'Content-Type: text/plain\r\n' +</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;'Content-Disposition: attachment;\r\n' +</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;'\r\n' +</dd>
+			<dd>&nbsp;&nbsp;&nbsp;&nbsp;'file content text'</dd>
+			<dd>&nbsp;&nbsp;}</dd>
+			<dd>]</dd>
+		</dl>
+		 
+	 <h3>Output - message</h3>
+		 <dl class="message-properties">
+			<dt>payload<span class="property-type">string | object</span></dt><dd> the standard output or error of the response.</dd>
+		 </dl>
+
+	<h3>References</h3>
+		<ul>
+			<li><a href="https://teamogy.com/teamogy-flow">Teamogy Flow docs</a> - full description of Teamogy Flow</li>
+		</ul>
+</script>
