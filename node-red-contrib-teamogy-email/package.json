@@ -5,6 +5,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+   "keywords": [
+        "node-red",
+        "teamogy",
+        "email"
+   ],
+   "repository": {
+        "type": "git",
+        "url": "https://github.com/teamogy-team/node-red-nodes"
+   },
   "author": "",
   "license": "",
   "node-red": {
