@@ -29,7 +29,7 @@ You can send SQL commands in the following way:
 
 You can send one SQL command, for example:
 ```sql
-UPDATE users SET phone = '+420222551500' WHERE id = 15
+UPDATE users SET phone = '+420123456789' WHERE id = 15
 ```
 
 Or multiple commands separated by a semicolon:
