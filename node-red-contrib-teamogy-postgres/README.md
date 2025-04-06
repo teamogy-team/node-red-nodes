@@ -1,6 +1,6 @@
 # PostgreSQL node for Node-RED
 
-Connect to Postgres database.
+Connect to PostgreSQL database.
 
 You must configure Connection before using this node.
 
