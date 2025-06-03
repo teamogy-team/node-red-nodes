@@ -59,39 +59,36 @@ module.exports = function(RED) {
 			}
 
 			node.on('input', async function(msg) {
+    
+    			const qs = msg.payload; // SQL dotaz z payloadu původní zprávy
 
-				let newMsg = JSON.parse(JSON.stringify(msg));
-				
-				const qs = msg.payload
+    		const doAsyncJobs = async () => {
+        		try {
+            		const q = await sql`${sql.unsafe(qs)}`.simple();
+            		node.status({fill: "green", shape: "dot", text: "query ok"});
+            		return [0, q]; // Status 0 pro úspěch, q je výsledek
+        		} catch (e) {
+            		node.error(e.message, msg); // Předat msg do node.error pro lepší kontext chyby v Node-RED
+            		node.status({fill: "red", shape: "ring", text: "query error"});
+            	return [1, e]; // Status 1 pro chybu, e je objekt chyby
+        				}
+    		};
 
-				const doAsyncJobs = async () => {
-					try {
-						const q = await sql`${sql.unsafe(qs)}`.simple();
-						node.status({fill: "green", shape: "dot", text: "query ok"});
-						return [0,q];
-					} catch (e) {
-						node.error(e);
-						node.status({fill: "red", shape: "ring", text: "query error"});
-						return [1,e];
-					} 
-				}
+		    const r = await doAsyncJobs();
 
-				const r = await doAsyncJobs()
-				if(r[0] == 0) {
-					newMsg.payload = r[1]
-					newMsg.count = r[1].length	
-					node.send(JSON.parse(JSON.stringify(newMsg)));	
-				} 
-				else if(r[0] == 1) {
-					newMsg.payload = ''	
-					newMsg.error = r[1]
-					newMsg.count = 0
-					node.send(JSON.parse(JSON.stringify(newMsg)));	
-				} 
-				else {
-					return
-				}
-			});
+    		if (r[0] === 0) { 
+        		msg.payload = r[1];
+        		msg.count = r[1].length;
+        		delete msg.error;      
+        		node.send(msg);        
+    		} else if (r[0] === 1) { 
+        		msg.payload = '';    
+        		msg.error = r[1].message;
+        		msg.count = 0;           
+        		node.send(msg);          
+    	}
+    
+		});
 			
 		} catch (e) {
 			node.error(e);
