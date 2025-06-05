@@ -77,7 +77,7 @@ module.exports = function(RED) {
 		    const r = await doAsyncJobs();
 
     		if (r[0] === 0) { 
-        		msg.payload = r[1];
+        		msg.payload = JSON.parse(JSON.stringify(r[1])); // Převedení na běžný JavaScript objekt
         		msg.count = r[1].length;
         		delete msg.error;      
         		node.send(msg);        
