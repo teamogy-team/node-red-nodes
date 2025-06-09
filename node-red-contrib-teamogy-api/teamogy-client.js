@@ -40,7 +40,7 @@ module.exports = function(RED) {
 			this.config = RED.nodes.getNode(data.configuration);
 
 			let token = this.config.credentials.token
-			let host = this.config.host
+			let host = this.config.host.replace(/^https?:\/\//, '').split('/')[0];
 			let unit = this.config.unit
 		
 			let clientid = data.id
