@@ -98,7 +98,7 @@ msg.body.address = addresses // array of objects
 |----------|------|-------------|
 | payload | string \| object | The standard output of the response |
 | count | number | Number of records in the output |
-| error | string | Rrror message |
+| error | string | Error message |
 | msg.* | string \| object | All properties of the input message |
 
 ## References
