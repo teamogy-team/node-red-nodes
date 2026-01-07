@@ -31,8 +31,15 @@ You must configure a Connection before using this node.
 | Limit | number | Optional | Limitation of the total number of records in the response (if not specified, the value 0 is used, the value 0 means no limit) |
 | Paging | number | Optional | Division of responses into multiple parts with the number of records returned (if not specified, the value 1000 is used) |
 | Offset | number | Optional | Determining from which records to return, e.g. if you have a total of 100 records and want to return records 50-100, set Offset to 50, if you want to return all records leave the option at 0 (if not specified, the value 0 is used) |
+| Delay | number | Optional | Specifies the delay between requests, which is used for pagination (if not specified, the value 0 is used) |
+| Req. repeat | number | Optional | Specifies the number of errors after which the request will be repeated (if not specified, the value 5 is used) |
+| Req. delay (s) | number | Optional | Specifies the delay between requests, which is used when retrying a request in case of an error (if not specified, the value 30 is used) |
 | Skip | boolean | Optional, in message only | Adding the msg.skip=true will allow the message to pass through to the output without processing |
-
+| Connection | string | Optional, in message only | Replaces connection from configuration, use connection name |
+| Unit | number | Optional, in message only | Replaces unit from connection configuration, use unit/agency id |
+| Entity | string | Optional, in message only | Replaces entity from configuration, use v_entityName for views or r_entityName |
+| Method | string | Optional, in message only | Replaces method from configuration, use the available method for the given entity |
+			
 ## Examples
 
 ### Static Request Examples
@@ -89,8 +96,9 @@ msg.body.address = addresses // array of objects
 
 | Property | Type | Description |
 |----------|------|-------------|
-| payload | string \| object | The standard output or error of the response |
+| payload | string \| object | The standard output of the response |
 | count | number | Number of records in the output |
+| error | string | Rrror message |
 | msg.* | string \| object | All properties of the input message |
 
 ## References
