@@ -1,7 +1,49 @@
 function isEmpty(value) { return (value == null || (typeof value === "string" && value.trim().length === 0)); }
 
+async function fetchWithRetry(url, options, retries, delay, node) {
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const response = await fetch(url, options);
+            if (response.status >= 200 && response.status < 300) {
+                return response;
+            }
+
+			let o = {}
+			o.status = response.status;
+			o.message = await response.text();
+			o.attempt = i + 1;
+			o.delay = delay / 1000;
+
+			await new Promise(resolve => setTimeout(resolve, delay));
+
+        } catch (error) {
+
+			let o = {}
+			o.status = 0;
+			o.message = 'Request failed';
+			o.attempt = i + 1;
+			o.delay = delay / 1000;
+            
+			await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+    return null;
+}
+
 module.exports = function(RED) {
 	
+	function getConfigId(name) {
+        var configNodes = [];
+        RED.nodes.eachNode(function(node) {
+            if (node.type === "teamogy-config") {
+                configNodes.push(node);
+            }
+        });
+
+		const configId = configNodes.find(item => item.name === name)?.id;
+		return configId;
+	}
+
 	function ConnectionNode(n) {
 		try {
 			RED.nodes.createNode(this, n);
@@ -42,6 +84,7 @@ module.exports = function(RED) {
 			let token = this.config.credentials.token
 			let host = this.config.host.replace(/^https?:\/\//, '').split('/')[0];
 			let unit = this.config.unit
+			let connName = this.config.name
 		
 			let clientid = data.id
 			let c = this.context().global.get('cache_' + host)
@@ -56,7 +99,12 @@ module.exports = function(RED) {
 					let mlimit = 0
 					let mpaging = 1000
 					let moffset = 0
-					
+					let entity = '' 
+					let method = 'GET'
+					let delay = 0;
+					let repeat = 5;
+					let rdelay = 30;
+
 					if(data.source=='dynamic') {
 						if(typeof msg.params == 'string') { mparams = msg.params }
 						if(typeof msg.params == 'object') {
@@ -74,11 +122,30 @@ module.exports = function(RED) {
 						if(typeof msg[data.bodysource] == 'string') { body = msg[data.bodysource] }
 						if(typeof msg[data.bodysource] == 'object') { body = JSON.stringify(msg[data.bodysource]) }
 
-						if(typeof msg.merge == 'boolean') { mmerge = msg.merge }
-						if(typeof msg.limit == 'number') { mlimit = msg.limit }
-						if(typeof msg.paging == 'number') { mpaging = msg.paging }
-						if(typeof msg.offset == 'number') { moffset = msg.offset }
+						if(typeof msg.merge == 'boolean') { mmerge = msg.merge } 
+						if(typeof msg.limit == 'number') { mlimit = msg.limit } 
+						if(typeof msg.paging == 'number') { mpaging = msg.paging } 
+						if(typeof msg.offset == 'number') { moffset = msg.offset } 
+						if(typeof msg.unit == 'number') { unit = msg.unit } 
+						if(typeof msg.entity == 'string') { entity = msg.entity } else { entity = data.entity }
+						if(typeof msg.method == 'string') { method = msg.method } else { method = data.method }
+						if(typeof msg.delay == 'number') { delay = msg.delay * 1000 } else { delay = data.delay * 1000 }
+						if(typeof msg.repeat == 'number') { repeat = msg.repeat ?? 5 } else { repeat = data.repeat ?? 5 }
+						if(typeof msg.rdelay == 'number') { rdelay = msg.rdelay * 1000 } else { rdelay = data.rdelay * 1000 }
 	
+						if(typeof msg.connection == 'string') {
+							if(msg.connection) {
+								const customConfig = RED.nodes.getNode(getConfigId(msg.connection));
+								if(customConfig) {
+									token = customConfig.credentials.token;
+									host = customConfig.host.replace(/^https?:\/\//, '').split('/')[0];
+									unit = customConfig.unit;
+								} else {
+									node.warn("Specified connection not found: " + msg.connection + ", using default: " + connName);
+								}
+							}
+						}
+					
 					}
 					
 					if(data.source=='static') {
@@ -95,39 +162,43 @@ module.exports = function(RED) {
 						mlimit = data.limit
 						mpaging = data.paging
 						moffset = data.offset
+						entity = data.entity
+						method = data.method
+						delay = data.delay * 1000
+						repeat = data.repeat ?? 5
+						rdelay = data.rdelay * 1000
 					}
-					
+
 					const headers = {
 						'Authorization': 'Bearer ' + token,
 						'Accept': 'application/json',
 						'Content-type': 'application/json'
 					};
-					
+
 					let url = `https://${host}/rest/v1/${unit}/`
 
-					if(data.entity.split('_')[0] == 'v') { url = url + 'views/'}
+					if(entity.split('_')[0] == 'v') { url = url + 'views/'}
 					
-					url = url + data.entity.split('_')[1].replaceAll('-','.')
+					url = url + entity.split('_')[1].replaceAll('-','.')
 					
 					if(!isEmpty(mparams)) { url = url + '?' + mparams }
-
+					
 					const doAsyncJobs = async () => {
 						try {
-							
-							let newMsg = JSON.parse(JSON.stringify(mesg.msg));
 							
 							let metadata = {};
 							metadata.count = 0
 							metadata.limit = 0
 							let rdata = [];
-							
-							let method = data.method
+
 							let offset = moffset
-							
+
 							if(method == 'GET') { body = null }
 							
-							if(data.entity.split('_')[0] == 'v') { 
+							if(entity.split('_')[0] == 'v') { 
 								if(isEmpty(mparams)) { url = url + '?' } else { url = url + '&' }
+								
+								const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 								
 								while (offset != null) {
 									
@@ -136,9 +207,9 @@ module.exports = function(RED) {
 
 									eurl = encodeURI(url + 'limit=' + mpaging +'&offset=' + offset)
 
-									const response = await fetch(eurl, {headers, method, body});
+                                    const response = await fetchWithRetry(eurl, { headers, method, body }, repeat, rdelay, node);
 							
-									if(response.status >= 200 && response.status < 300) {
+									if(response && response.status >= 200 && response.status < 300) {
 										
 										const body = await response.json();
 										offset = body?.metadata?.nextOffset
@@ -149,9 +220,9 @@ module.exports = function(RED) {
 										if(mlimit - metadata.count < mpaging) { mpaging = mlimit - metadata.count}
 
 										if(mmerge == false) {
-											newMsg.payload=body;
-											newMsg.payload.count=body.data.length;
-											node.send(JSON.parse(JSON.stringify(newMsg)));	
+											msg.payload = body;
+											msg.count = body.data.length;
+											node.send(msg);	
 										} 
 										
 										if(mmerge == true) {
@@ -161,10 +232,22 @@ module.exports = function(RED) {
 										} 
 										
 										if(mlimit <= metadata.count) { break; }
-			
+										if (offset != null && delay > 0) { await sleep(delay); }
+										
 									} else {
-										node.error('Response status: ' + response.status);
-										node.error('Response status: ' + await response.text());
+                                        if (!response) {
+                                            node.error('Request failed after all attempts.');
+											msg.error = 'Request failed after all attempts.'
+											msg.payload = null;
+											if(msg.res){
+												msg.payload = JSON.stringify('Request failed after all attempts.');
+												msg.statusCode = 500;
+											}
+											node.send(msg);
+                                        } else {
+                                            node.error('Response status: ' + response.status);
+                                            node.error('Response text: ' + await response.text());
+                                        }
 										break;
 									}	
 								} 
@@ -174,27 +257,34 @@ module.exports = function(RED) {
 									metadata.limit = parseInt(data.paging)
 									body.metadata = metadata
 									body.data = rdata
-									body.count = rdata.length
-									newMsg.payload = body
-									node.send(JSON.parse(JSON.stringify(newMsg)));	
+									msg.payload = body
+									msg.count = rdata.length
+									node.send(msg);	
 								}
 							}
 							
-							if(data.entity.split('_')[0] == 'r') { 
+							if(entity.split('_')[0] == 'r') { 
 
-								const response = await fetch(encodeURI(url), {headers, method, body});
+                                const response = await fetchWithRetry(encodeURI(url), { headers, method, body }, repeat, rdelay, node);
 
-								if(response.status >= 200 && response.status < 300) {
+								if(response && response.status >= 200 && response.status < 300) {
 									const body = await response.json();
-									newMsg.payload = body
-									node.send(JSON.parse(JSON.stringify(newMsg)));	
+									msg.payload = body
+									node.send(msg);	
 								} else {
-									let payload = {}
-									payload.status = response.status
-									payload.text = await response.text()
-
-									newMsg.payload = payload
-									node.send(JSON.parse(JSON.stringify(newMsg)));	
+									if (!response) {
+										node.error('Request failed after all attempts.');
+                                        msg.error = 'Request failed after all attempts.'
+										msg.payload = null;
+										if(msg.res){
+											msg.payload = JSON.stringify('Request failed after all attempts.');
+											msg.statusCode = 500;
+										}
+										node.send(msg);
+                                    } else {
+										node.error('Response status: ' + response.status);
+                                        node.error('Response text: ' + await response.text());
+                                    }
 								}
 							}
 						} catch (e) {
@@ -202,7 +292,7 @@ module.exports = function(RED) {
 						} 
 					}
 					
-					const r = await doAsyncJobs()
+					await doAsyncJobs();
 					
 				} catch (e) {
 					node.error(e);
