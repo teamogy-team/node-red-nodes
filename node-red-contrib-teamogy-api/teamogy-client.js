@@ -10,10 +10,11 @@ async function fetchWithRetry(url, options, retries, delay, node) {
 
 			let o = {}
 			o.status = response.status;
-			o.message = await response.text();
+			o.message = await response.text() ?? '';
 			o.attempt = i + 1;
 			o.delay = delay / 1000;
-
+			node.warn(o);
+			
 			await new Promise(resolve => setTimeout(resolve, delay));
 
         } catch (error) {
@@ -23,7 +24,8 @@ async function fetchWithRetry(url, options, retries, delay, node) {
 			o.message = 'Request failed';
 			o.attempt = i + 1;
 			o.delay = delay / 1000;
-            
+            node.warn(o);
+			
 			await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
@@ -63,7 +65,7 @@ module.exports = function(RED) {
 			}
 		
 		} catch (e) {
-			node.error(e);
+			node.error(e.message);
 		}
 	}
   
@@ -288,14 +290,14 @@ module.exports = function(RED) {
 								}
 							}
 						} catch (e) {
-							node.error(e);
+							node.error(e.message);
 						} 
 					}
 					
 					await doAsyncJobs();
 					
 				} catch (e) {
-					node.error(e);
+					node.error(e.message);
 				}
 			}
 			
@@ -306,7 +308,7 @@ module.exports = function(RED) {
 					});
 					return na.length
 				} catch (e) {
-					node.error(e);
+					node.error(e.message);
 				} 
 			}
 
@@ -334,7 +336,7 @@ module.exports = function(RED) {
 					}
 				}
 				catch (e) {
-					node.error(e);
+					node.error(e.message);
 				}
 			}
 
@@ -365,12 +367,12 @@ module.exports = function(RED) {
 					}
 				}
 				catch (e) {
-					node.error(e);
+					node.error(e.message);
 				}
 			});
 		
 		} catch (e) {
-			node.error(e);
+			node.error(e.message);
 		}
 	}
 	
