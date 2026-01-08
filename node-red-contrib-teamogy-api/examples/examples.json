@@ -1,0 +1,88 @@
+[
+    {
+        "id": "62054fac29909a02",
+        "type": "tab",
+        "label": "Teamogy API",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "05bbee7aa38f796a",
+        "type": "inject",
+        "z": "62054fac29909a02",
+        "name": "start",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 80,
+        "wires": [
+            [
+                "25be0ae5bfcab80b"
+            ]
+        ]
+    },
+    {
+        "id": "7bf1dfbdafb4256d",
+        "type": "debug",
+        "z": "62054fac29909a02",
+        "name": "debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 450,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "25be0ae5bfcab80b",
+        "type": "teamogy-client",
+        "z": "62054fac29909a02",
+        "name": "",
+        "configuration": "",
+        "mode": true,
+        "method": "GET",
+        "entity": "v_users",
+        "source": "static",
+        "cparams": "",
+        "cbody": "",
+        "bodysource": "payload",
+        "merge": false,
+        "limit": "0",
+        "paging": "1000",
+        "offset": "0",
+        "delay": "0",
+        "repeat": "5",
+        "rdelay": "30",
+        "x": 280,
+        "y": 80,
+        "wires": [
+            [
+                "7bf1dfbdafb4256d"
+            ]
+        ]
+    },
+    {
+        "id": "b7904e06c3ec62bd",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-teamogy-api": "0.0.4"
+        }
+    }
+]
