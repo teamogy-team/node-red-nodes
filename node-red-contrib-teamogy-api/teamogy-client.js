@@ -1,39 +1,63 @@
 function isEmpty(value) { return (value == null || (typeof value === "string" && value.trim().length === 0)); }
 
-async function fetchWithRetry(url, options, retries, delay, node) {
-    for (let i = 0; i <= retries; i++) {
-        try {
-            const response = await fetch(url, options);
-            if (response.status >= 200 && response.status < 300) {
-                return response;
-            }
-
-			let o = {}
-			o.status = response.status;
-			o.message = await response.text() ?? '';
-			o.attempt = i + 1;
-			o.delay = delay / 1000;
-			node.warn(o);
-			
-			await new Promise(resolve => setTimeout(resolve, delay));
-
-        } catch (error) {
-
-			let o = {}
-			o.status = 0;
-			o.message = 'Request failed';
-			o.attempt = i + 1;
-			o.delay = delay / 1000;
-            node.warn(o);
-			
-			await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-    return null;
-}
-
 module.exports = function(RED) {
-	
+
+	if (typeof globalNextAvailableSlot === 'undefined') {
+		var globalNextAvailableSlot = Date.now();
+	}
+
+	async function fetchWithRetry(url, options, retries, delay, node, limit) {
+
+		const minInterval = 60000 / limit;
+
+		for (let i = 0; i <= retries; i++) {
+			try {
+				let now = Date.now();
+				let waitTime = 0;
+
+				let scheduledTime = Math.max(now, globalNextAvailableSlot);
+				globalNextAvailableSlot = scheduledTime + minInterval;
+
+				waitTime = scheduledTime - now;
+
+				if (waitTime > 0) {
+					await new Promise(resolve => setTimeout(resolve, waitTime));
+				}
+
+				if (node.closingId == node.id) {
+					return { status: 0 };
+				}
+
+				const response = await fetch(url, options);
+
+				if (response.status >= 200 && response.status < 300) {
+					return response;
+				}
+
+				let o = {
+					status: response.status,
+					message: await response.text() ?? '',
+					attempt: i + 1,
+					delay: delay / 1000
+				};
+				node.warn(o);
+
+				await new Promise(resolve => setTimeout(resolve, delay));
+
+			} catch (error) {
+				let o = {
+					status: 0,
+					message: 'Request failed: ' + error.message,
+					attempt: i + 1,
+					delay: delay / 1000
+				};
+				node.warn(o);
+				await new Promise(resolve => setTimeout(resolve, delay));
+			}
+		}
+		return null;
+	}
+
 	function getConfigId(name) {
         var configNodes = [];
         RED.nodes.eachNode(function(node) {
@@ -63,6 +87,10 @@ module.exports = function(RED) {
 				let cache = []
 				this.context().global.set('cache_' + this.host, cache)
 			}
+			
+			if(typeof this.context().global.get('count_' + this.host ) == 'undefined') {
+				this.context().global.set('count_' + this.host, 0)
+			}
 		
 		} catch (e) {
 			node.error(e.message);
@@ -78,7 +106,9 @@ module.exports = function(RED) {
 	function teamogyClient(data) {
 		try {
 			var node = this;
-
+			
+			node.closingId = '';
+			
 			RED.nodes.createNode(node,data);
 
 			this.config = RED.nodes.getNode(data.configuration);
@@ -87,9 +117,11 @@ module.exports = function(RED) {
 			let host = this.config.host.replace(/^https?:\/\//, '').split('/')[0];
 			let unit = this.config.unit
 			let connName = this.config.name
+			let apiLimit = this.config.apilimit
 		
 			let clientid = data.id
 			let c = this.context().global.get('cache_' + host)
+			let ct = this.context().global.get('count_' + host)
 			let st = null;
 
 			async function sendmsg(mesg) {
@@ -192,9 +224,9 @@ module.exports = function(RED) {
 							metadata.count = 0
 							metadata.limit = 0
 							let rdata = [];
-
+							
 							let offset = moffset
-
+							
 							if(method == 'GET') { body = null }
 							
 							if(entity.split('_')[0] == 'v') { 
@@ -202,14 +234,14 @@ module.exports = function(RED) {
 								
 								const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 								
-								while (offset != null) {
+								while (offset != null && node.closingId != clientid) {
 									
 									if(parseInt(mlimit) == 0) { mlimit = 1000000000}
 									if(parseInt(mlimit) < parseInt(mpaging)) { mpaging = mlimit }
 
 									eurl = encodeURI(url + 'limit=' + mpaging +'&offset=' + offset)
 
-                                    const response = await fetchWithRetry(eurl, { headers, method, body }, repeat, rdelay, node);
+                                    const response = await fetchWithRetry(eurl, { headers, method, body }, repeat, rdelay, node, apiLimit);
 							
 									if(response && response.status >= 200 && response.status < 300) {
 										
@@ -234,11 +266,11 @@ module.exports = function(RED) {
 										} 
 										
 										if(mlimit <= metadata.count) { break; }
+
 										if (offset != null && delay > 0) { await sleep(delay); }
 										
 									} else {
                                         if (!response) {
-                                            node.error('Request failed after all attempts.');
 											msg.error = 'Request failed after all attempts.'
 											msg.payload = null;
 											if(msg.res){
@@ -246,7 +278,7 @@ module.exports = function(RED) {
 												msg.statusCode = 500;
 											}
 											node.send(msg);
-                                        } else {
+                                        } else if(response.status != 0) {
                                             node.error('Response status: ' + response.status);
                                             node.error('Response text: ' + await response.text());
                                         }
@@ -267,7 +299,7 @@ module.exports = function(RED) {
 							
 							if(entity.split('_')[0] == 'r') { 
 
-                                const response = await fetchWithRetry(encodeURI(url), { headers, method, body }, repeat, rdelay, node);
+                                const response = await fetchWithRetry(encodeURI(url), { headers, method, body }, repeat, rdelay, node, apiLimit);
 
 								if(response && response.status >= 200 && response.status < 300) {
 									const body = await response.json();
@@ -275,7 +307,6 @@ module.exports = function(RED) {
 									node.send(msg);	
 								} else {
 									if (!response) {
-										node.error('Request failed after all attempts.');
                                         msg.error = 'Request failed after all attempts.'
 										msg.payload = null;
 										if(msg.res){
@@ -283,7 +314,7 @@ module.exports = function(RED) {
 											msg.statusCode = 500;
 										}
 										node.send(msg);
-                                    } else {
+                                    } else if(response.status != 0) {
 										node.error('Response status: ' + response.status);
                                         node.error('Response text: ' + await response.text());
                                     }
@@ -314,6 +345,14 @@ module.exports = function(RED) {
 
 			async function setTimer(host) {
 				try {
+					if(node.closingId == clientid) {
+						for (let i = c.length - 1; i >= 0; i--) {
+							if (c[i].clientid === clientid) {
+								c.splice(i, 1); 
+							}
+						}
+					}
+					
 					if(c.length > 0) {
 						let nd = new Date()
 						if(nd.getTime() > c[0].stime) {
@@ -331,6 +370,7 @@ module.exports = function(RED) {
 							node.status({fill: "yellow", shape: "dot", text: fal + " waiting messages"});
 						}
 					} else {
+						node.status({fill: "green", shape: "dot", text: "0 waiting messages"});
 						clearInterval(st) 
 						st = null
 					}
@@ -340,7 +380,7 @@ module.exports = function(RED) {
 				}
 			}
 
-			node.on('input', async function(msg) {
+			node.on('input', async function(msg, send, done) {
 				try {
 					if(st == null){ st = setInterval(function () { setTimer(host) }, 1000)}
 
@@ -365,6 +405,9 @@ module.exports = function(RED) {
 					} else {
 						node.send(msg)
 					}
+					if (done) {
+						done();
+					}
 				}
 				catch (e) {
 					node.error(e.message);
@@ -374,6 +417,14 @@ module.exports = function(RED) {
 		} catch (e) {
 			node.error(e.message);
 		}
+		
+		node.on('close', function(done) {
+			node.closingId = this.id;
+
+            if (done) {
+                done();
+            }
+        });
 	}
 	
 	RED.nodes.registerType("teamogy-client",teamogyClient);
