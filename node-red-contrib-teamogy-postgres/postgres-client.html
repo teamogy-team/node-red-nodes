@@ -24,7 +24,7 @@
       </div>
 	  
 	  <div class="form-row">
-		<label for="node-config-input-ssl"><i class="fa fa-server"></i> <span>SSL</span></label>
+		<label for="node-config-input-ssl"><i class="fa fa-server"></i> <span>TLS</span></label>
 		<input type="checkbox" id="node-config-input-ssl" style=" width: auto;">
        </div>
 	  
@@ -195,7 +195,7 @@ RED.nodes.registerType('postgres-config', {
     return this.name || "postgres";
   },
   paletteLabel: function() {
-    return this.name || "postgres";
+    return "postgres";
   },
   labelStyle: function() {
     return this.name ? "node_label_italic" : "";
