@@ -50,6 +50,9 @@ module.exports = function(RED) {
 					password: node.config.password,
 					ssl: node.config.ssl,
 					max: node.config.maxconnections,
+					connection: {
+						application_name: "tf-pg-" + node.id
+					},
 					idle_timeout: node.config.idletimeout,
 					connect_timeout: node.config.connectiontimeout
 				});
@@ -60,17 +63,17 @@ module.exports = function(RED) {
 
 			node.on('input', async function(msg) {
     
-    			const qs = msg.payload; // SQL dotaz z payloadu původní zprávy
+    			const qs = msg.payload;
 
     		const doAsyncJobs = async () => {
         		try {
             		const q = await sql`${sql.unsafe(qs)}`.simple();
             		node.status({fill: "green", shape: "dot", text: "query ok"});
-            		return [0, q]; // Status 0 pro úspěch, q je výsledek
+            		return [0, q]; 
         		} catch (e) {
-            		node.error(e.message, msg); // Předat msg do node.error pro lepší kontext chyby v Node-RED
+            		node.error(e.message, msg);
             		node.status({fill: "red", shape: "ring", text: "query error"});
-            	return [1, e]; // Status 1 pro chybu, e je objekt chyby
+            	return [1, e];
         				}
     		};
 
