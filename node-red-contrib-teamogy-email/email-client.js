@@ -117,6 +117,11 @@ module.exports = function(RED) {
 					if (typeof msg?.attachments != 'undefined') { attachments = msg.attachments; }
 					else if (typeof msg?.payload?.attachments != 'undefined') { attachments = msg.payload.attachments; }
 					else if(typeof msg?.email?.attachments != 'undefined') { attachments = msg.email.attachments; }
+
+					let headers = {}
+					if (typeof msg?.headers != 'undefined') { headers = msg.headers; }
+					else if (typeof msg?.payload?.headers != 'undefined') { headers = msg.payload.headers; }
+					else if (typeof msg?.email?.headers != 'undefined') { headers = msg.email.headers; }
 					
 					let mailOptions = {
 						from: from, 
@@ -125,7 +130,8 @@ module.exports = function(RED) {
 						bcc: bcc,
 						replyTo: replyTo,
 						subject: subject, 
-						attachments: attachments
+						attachments: attachments,
+    					headers: headers
 					};
 					
 					if(html.length > 0) { mailOptions.html = html } else { if(text.length > 0) { mailOptions.text = text } }
