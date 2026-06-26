@@ -93,10 +93,10 @@ module.exports = function(RED) {
 			}
 		
 		} catch (e) {
-			node.error(e.message);
+			this.error(e.message);
 		}
 	}
-  
+
 	RED.nodes.registerType('teamogy-config', ConnectionNode, {
 		credentials: {
 			token: {type: 'password'}
@@ -213,7 +213,7 @@ module.exports = function(RED) {
 
 					if(entity.split('_')[0] == 'v') { url = url + 'views/'}
 					
-					url = url + entity.split('_')[1].replaceAll('-','.')
+					url = url + entity.substring(entity.indexOf('_') + 1).replaceAll('-','.')
 					
 					if(!isEmpty(mparams)) { url = url + '?' + mparams }
 					
