@@ -1,11 +1,15 @@
 <script type="text/javascript">
   let requests = `[
-     {"v":"r_companies", "e":"Contacts", "m":["GET","POST","PATCH"]},
+     {"v":"r_users", "e":"Config - Users", "m":["GET","POST","PATCH"]},
+	 {"v":"r_agencies", "e":"Config - Units", "m":["GET","POST","PATCH"]},
+
+     {"v":"r_companies", "e":"Contacts - Companies", "m":["GET","POST","PATCH"]},
+	 {"v":"r_persons", "e":"Contacts - Persons", "m":["GET","POST","PATCH"]},
+
      {"v":"r_documents", "e":"Documents", "m":["GET","POST","PATCH"]},
 	 {"v":"r_jobs", "e":"Jobs", "m":["GET","POST","PATCH"]},
 	 {"v":"r_tasks", "e":"Tasks", "m":["GET","POST","PATCH"]},
-	 {"v":"r_time", "e":"Time", "m":["POST"]},
-     {"v":"r_users", "e":"Users", "m":["GET","POST"]}
+	 {"v":"r_time", "e":"Time", "m":["POST"]}
    ]`;
 
   let values1 = JSON.parse(requests);
@@ -559,7 +563,7 @@
       });
     },
     oneditsave: function () {
-      this.mode = $("#node-input-mode").val();
+      this.mode = $("#node-input-mode").is(":checked");
       this.entity = $("#node-input-entity").val();
       this.method = $("#node-input-method").val();
       this.source = $("#node-input-source").val();

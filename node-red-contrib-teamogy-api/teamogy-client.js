@@ -104,9 +104,8 @@ module.exports = function(RED) {
 	});
 	
 	function teamogyClient(data) {
+		var node = this;
 		try {
-			var node = this;
-			
 			node.closingId = '';
 			
 			RED.nodes.createNode(node,data);
@@ -133,16 +132,19 @@ module.exports = function(RED) {
 					let mlimit = 0
 					let mpaging = 1000
 					let moffset = 0
-					let entity = '' 
+					let entity = ''
 					let method = 'GET'
 					let delay = 0;
 					let repeat = 5;
 					let rdelay = 30;
+					let mtoken = token
+					let mhost = host
+					let munit = unit
 
 					if(data.source=='dynamic') {
 						if(typeof msg.params == 'string') { mparams = msg.params }
 						if(typeof msg.params == 'object') {
-						 
+
 							let pa=Object.entries(msg.params)
 							if(pa.length > 0) {
 								mparams = pa[0][0] + '=' + pa[0][1]
@@ -156,37 +158,37 @@ module.exports = function(RED) {
 						if(typeof msg[data.bodysource] == 'string') { body = msg[data.bodysource] }
 						if(typeof msg[data.bodysource] == 'object') { body = JSON.stringify(msg[data.bodysource]) }
 
-						if(typeof msg.merge == 'boolean') { mmerge = msg.merge } 
-						if(typeof msg.limit == 'number') { mlimit = msg.limit } 
-						if(typeof msg.paging == 'number') { mpaging = msg.paging } 
-						if(typeof msg.offset == 'number') { moffset = msg.offset } 
-						if(typeof msg.unit == 'number') { unit = msg.unit } 
+						if(typeof msg.merge == 'boolean') { mmerge = msg.merge }
+						if(typeof msg.limit == 'number') { mlimit = msg.limit }
+						if(typeof msg.paging == 'number') { mpaging = msg.paging }
+						if(typeof msg.offset == 'number') { moffset = msg.offset }
+						if(typeof msg.unit == 'number') { munit = msg.unit }
 						if(typeof msg.entity == 'string') { entity = msg.entity } else { entity = data.entity }
 						if(typeof msg.method == 'string') { method = msg.method } else { method = data.method }
 						if(typeof msg.delay == 'number') { delay = msg.delay * 1000 } else { delay = data.delay * 1000 }
 						if(typeof msg.repeat == 'number') { repeat = msg.repeat ?? 5 } else { repeat = data.repeat ?? 5 }
 						if(typeof msg.rdelay == 'number') { rdelay = msg.rdelay * 1000 } else { rdelay = data.rdelay * 1000 }
-	
+
 						if(typeof msg.connection == 'string') {
 							if(msg.connection) {
 								const customConfig = RED.nodes.getNode(getConfigId(msg.connection));
 								if(customConfig) {
-									token = customConfig.credentials.token;
-									host = customConfig.host.replace(/^https?:\/\//, '').split('/')[0];
-									unit = customConfig.unit;
+									mtoken = customConfig.credentials.token;
+									mhost = customConfig.host.replace(/^https?:\/\//, '').split('/')[0];
+									munit = customConfig.unit;
 								} else {
 									node.warn("Specified connection not found: " + msg.connection + ", using default: " + connName);
 								}
 							}
 						}
-					
+
 					}
-					
+
 					if(data.source=='static') {
 						const pa = data.cparams.split(/\r?\n/)
 						if(pa.length > 0) {
 							mparams = pa[0]
-						
+
 							for (let i = 1; i < pa.length; i++) {
 								if(pa[i].length > 0) { mparams = mparams + '&' + pa[i] }
 							}
@@ -204,12 +206,12 @@ module.exports = function(RED) {
 					}
 
 					const headers = {
-						'Authorization': 'Bearer ' + token,
+						'Authorization': 'Bearer ' + mtoken,
 						'Accept': 'application/json',
 						'Content-type': 'application/json'
 					};
 
-					let url = `https://${host}/rest/v1/${unit}/`
+					let url = `https://${mhost}/rest/v1/${munit}/`
 
 					if(entity.split('_')[0] == 'v') { url = url + 'views/'}
 					
@@ -239,7 +241,7 @@ module.exports = function(RED) {
 									if(parseInt(mlimit) == 0) { mlimit = 1000000000}
 									if(parseInt(mlimit) < parseInt(mpaging)) { mpaging = mlimit }
 
-									eurl = encodeURI(url + 'limit=' + mpaging +'&offset=' + offset)
+									let eurl = encodeURI(url + 'limit=' + mpaging +'&offset=' + offset)
 
                                     const response = await fetchWithRetry(eurl, { headers, method, body }, repeat, rdelay, node, apiLimit);
 							
@@ -274,7 +276,7 @@ module.exports = function(RED) {
 											msg.error = 'Request failed after all attempts.'
 											msg.payload = null;
 											if(msg.res){
-												msg.payload = JSON.stringify('Request failed after all attempts.');
+												msg.payload = 'Request failed after all attempts.';
 												msg.statusCode = 500;
 											}
 											node.send(msg);
@@ -288,7 +290,7 @@ module.exports = function(RED) {
 								
 								if(mmerge == true) {
 									let body = {}
-									metadata.limit = parseInt(data.paging)
+									metadata.limit = parseInt(mpaging)
 									body.metadata = metadata
 									body.data = rdata
 									msg.payload = body
@@ -310,7 +312,7 @@ module.exports = function(RED) {
                                         msg.error = 'Request failed after all attempts.'
 										msg.payload = null;
 										if(msg.res){
-											msg.payload = JSON.stringify('Request failed after all attempts.');
+											msg.payload = 'Request failed after all attempts.';
 											msg.statusCode = 500;
 										}
 										node.send(msg);
@@ -382,7 +384,16 @@ module.exports = function(RED) {
 
 			node.on('input', async function(msg, send, done) {
 				try {
-					if(st == null){ st = setInterval(function () { setTimer(host) }, 1000)}
+					if(st == null){
+						const timerInterval = Math.floor(60000 / apiLimit);
+						let timerBusy = false;
+						st = setInterval(function () {
+							if (!timerBusy) {
+								timerBusy = true;
+								setTimer(host).finally(() => { timerBusy = false; });
+							}
+						}, timerInterval);
+					}
 
 					if(msg.skip != true) {
 						let stime = 0
