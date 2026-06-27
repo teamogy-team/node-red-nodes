@@ -39,7 +39,13 @@ module.exports = function(RED) {
 			
 			RED.nodes.createNode(node,config);
 			this.config = RED.nodes.getNode(config.configuration);
-			
+
+			if (!this.config) {
+				node.error("Missing or invalid postgres configuration");
+				node.status({fill: "red", shape: "ring", text: "no config"});
+				return;
+			}
+
 			let sql
 			try {
 				sql = postgres({
@@ -62,37 +68,60 @@ module.exports = function(RED) {
 			}
 
 			node.on('input', async function(msg) {
-    
-    			const qs = msg.payload;
 
-    		const doAsyncJobs = async () => {
-        		try {
-            		const q = await sql`${sql.unsafe(qs)}`.simple();
-            		node.status({fill: "green", shape: "dot", text: "query ok"});
-            		return [0, q]; 
-        		} catch (e) {
-            		node.error(e.message, msg);
-            		node.status({fill: "red", shape: "ring", text: "query error"});
-            	return [1, e];
-        				}
-    		};
+				if (!sql) {
+					node.error("No database connection", msg);
+					return;
+				}
 
-		    const r = await doAsyncJobs();
+				const qs = msg.payload;
 
-    		if (r[0] === 0) { 
-        		msg.payload = JSON.parse(JSON.stringify(r[1])); 
-        		msg.count = r[1].length;
-        		delete msg.error;      
-        		node.send(msg);        
-    		} else if (r[0] === 1) { 
-        		msg.payload = '';    
-        		msg.error = r[1].message;
-        		msg.count = 0;           
-        		node.send(msg);          
-    	}
-    
-		});
-			
+				if (typeof qs !== 'string' || !qs.trim()) {
+					node.error("msg.payload must be a non-empty SQL string", msg);
+					return;
+				}
+
+				const doAsyncJobs = async () => {
+					try {
+						const q = await sql`${sql.unsafe(qs)}`.simple();
+						node.status({fill: "green", shape: "dot", text: "query ok"});
+						return [0, q];
+					} catch (e) {
+						node.error(e, msg);
+						node.status({fill: "red", shape: "ring", text: "query error"});
+						return [1, e];
+					}
+				};
+
+				const r = await doAsyncJobs();
+
+				if (r[0] === 0) {
+					msg.payload = r[1];
+					msg.count = r[1].length;
+					delete msg.error;
+					node.send(msg);
+				} else if (r[0] === 1) {
+					const e = r[1];
+					msg.payload = '';
+					msg.error = {
+						message: e.message,
+						code: e.code,
+						detail: e.detail,
+						hint: e.hint
+					};
+					msg.count = 0;
+					node.send(msg);
+				}
+
+			});
+
+			node.on('close', async function(done) {
+				if (sql) {
+					await sql.end();
+				}
+				done();
+			});
+
 		} catch (e) {
 			node.error(e);
 		}

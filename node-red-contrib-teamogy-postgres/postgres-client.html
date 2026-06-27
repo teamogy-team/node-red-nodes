@@ -180,15 +180,10 @@ RED.nodes.registerType('postgres-config', {
     configuration: {
       type: "postgres-config",
       required: true
-    },
-    output: {
-      value: true
-    },
-    outputs: {
-      value: 1
     }
   },
   inputs: 1,
+  outputs: 1,
   icon: "db.svg",
   align: "left",
   label: function() {
