@@ -125,7 +125,6 @@
         type: "password",
         required: true,
       },
-      required: true,
     },
     label: function () {
       if (!this.name) {
@@ -252,13 +251,13 @@
   	  <label for="node-input-params" style="width: 130px"><i class="fa fa-code"></i> Parameters</label>
   	</div>
   	<div class="form-row">
-  	  <div style="height: 100px; min-height:100px;" class="node-text-editor" id="node-input-params" style='width:65%'></div>
+  	  <div style="height: 100px; min-height:100px; width:65%;" class="node-text-editor" id="node-input-params"></div>
   	</div>
   	<div class="form-row">
   	  <label for="node-input-body" style="width: 130px"><i class="fa fa-code"></i> Body</label>
   	</div>
   	<div class="form-row">
-  	  <div style="height: 100px; min-height:100px;" class="node-text-editor" id="node-input-body" style='width:65%'></div>
+  	  <div style="height: 100px; min-height:100px; width:65%;" class="node-text-editor" id="node-input-body"></div>
   	</div>
     </div>
 
@@ -398,7 +397,7 @@
       let body = this.cbody;
 
       $("#node-input-source").val(this.source);
-      $("#node-input-merge").val(this.merge);
+      $("#node-input-merge").prop("checked", this.merge);
       $("#node-input-limit").val(this.limit);
       $("#node-input-paging").val(this.paging);
       $("#node-input-offset").val(this.offset);
@@ -406,7 +405,7 @@
       $("#node-input-repeat").val(this.repeat);
       $("#node-input-rdelay").val(this.rdelay);
 
-      $("#node-input-mode").val(this.mode);
+      $("#node-input-mode").prop("checked", this.mode);
       $("#node-input-body-source").val(this.bodysource);
 
       if (this.mode === true) {
@@ -555,36 +554,15 @@
       this.entity = $("#node-input-entity").val();
       this.method = $("#node-input-method").val();
       this.source = $("#node-input-source").val();
-      this.merge = $("#node-input-merge").val();
+      this.merge = $("#node-input-merge").is(":checked");
       this.bodysource = $("#node-input-body-source").val();
 
-      if (!$("#node-input-limit").val()) {
-        this.limit = 0;
-      } else {
-        this.limit = $("#node-input-limit").val();
-      }
-      if (!$("#node-input-offset").val()) {
-        this.offset = 0;
-      } else {
-        this.offset = $("#node-input-offset").val();
-      }
-      this.paging = $("#node-input-paging").val();
-
-      if (!$("#node-input-delay").val()) {
-        this.delay = 0;
-      } else {
-        this.delay = $("#node-input-delay").val();
-      }
-      if (!$("#node-input-repeat").val()) {
-        this.repeat = 0;
-      } else {
-        this.repeat = $("#node-input-repeat").val();
-      }
-      if (!$("#node-input-rdelay").val()) {
-        this.rdelay = 0;
-      } else {
-        this.rdelay = $("#node-input-rdelay").val();
-      }
+      this.limit  = parseInt($("#node-input-limit").val())  || 0;
+      this.offset = parseInt($("#node-input-offset").val()) || 0;
+      this.paging = parseInt($("#node-input-paging").val()) || 1000;
+      this.delay  = parseInt($("#node-input-delay").val())  || 0;
+      this.repeat = parseInt($("#node-input-repeat").val()) || 0;
+      this.rdelay = parseInt($("#node-input-rdelay").val()) || 0;
 
       this.cparams = this.editorp.getValue();
       this.editorp.destroy();
