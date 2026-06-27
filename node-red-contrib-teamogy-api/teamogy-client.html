@@ -1,56 +1,44 @@
 <script type="text/javascript">
-  let requests = `[
-     {"v":"r_users", "e":"Config - Users", "m":["GET","POST","PATCH"]},
-	 {"v":"r_agencies", "e":"Config - Units", "m":["GET","POST","PATCH"]},
+  const values1 = [
+    { label: "Config - Users",             parameter: "r_users",     method: ["GET", "POST", "PATCH"] },
+    { label: "Config - Units",             parameter: "r_agencies",  method: ["GET", "POST", "PATCH"] },
+    { label: "Contacts - Companies",       parameter: "r_companies", method: ["GET", "POST", "PATCH"] },
+    { label: "Contacts - Persons",         parameter: "r_persons",   method: ["GET", "POST", "PATCH"] },
+    { label: "Documents",                  parameter: "r_documents", method: ["GET", "POST", "PATCH"] },
+    { label: "Jobs",                       parameter: "r_jobs",      method: ["GET", "POST", "PATCH"] },
+    { label: "Tasks",                      parameter: "r_tasks",     method: ["GET", "POST", "PATCH"] },
+    { label: "Time",                       parameter: "r_time",      method: ["POST"] },
+  ];
 
-     {"v":"r_companies", "e":"Contacts - Companies", "m":["GET","POST","PATCH"]},
-	 {"v":"r_persons", "e":"Contacts - Persons", "m":["GET","POST","PATCH"]},
-
-     {"v":"r_documents", "e":"Documents", "m":["GET","POST","PATCH"]},
-	 {"v":"r_jobs", "e":"Jobs", "m":["GET","POST","PATCH"]},
-	 {"v":"r_tasks", "e":"Tasks", "m":["GET","POST","PATCH"]},
-	 {"v":"r_time", "e":"Time", "m":["POST"]}
-   ]`;
-
-  let values1 = JSON.parse(requests);
-
-  let views = `[
-	 {"v":"v_units", "e":"Config - Units", "m":["GET"]},
-	 {"v":"v_users", "e":"Config - Users", "m":["GET"]},   
-	 {"v":"v_groups", "e":"Config - Groups", "m":["GET"]},
-
-	 {"v":"v_companies", "e":"Contacts - Companies - All", "m":["GET"]},
-	 {"v":"v_companies-client", "e":"Contacts - Companies - Clients only", "m":["GET"]},
-	 {"v":"v_companies-supplier", "e":"Contacts - Companies - Suppliers only", "m":["GET"]},
-	 {"v":"v_persons", "e":"Contacts - Persons", "m":["GET"]},
-	 {"v":"v_brands", "e":"Contacts - Brands", "m":["GET"]},
-
-	 {"v":"v_documents", "e":"Documents - All", "m":["GET"]},
-	 {"v":"v_documents-order-purchase", "e":"Documents - Purchase Orders", "m":["GET"]},
-	 {"v":"v_documents-quotation-sales", "e":"Documents - Sales Quotations", "m":["GET"]},
-
-	 {"v":"v_invoices-purchase", "e":"Finance - Purchase Invoices", "m":["GET"]},
-	 {"v":"v_invoices-sales", "e":"Finance - Sales Invoices", "m":["GET"]},
-	 {"v":"v_internals-purchase", "e":"Finance - Purchase Internal Documents", "m":["GET"]},
-	 {"v":"v_internals-sales", "e":"Finance - Sales Internal Documents", "m":["GET"]},
-	 {"v":"v_overheads-client", "e":"Finance - Client Overheads", "m":["GET"]},
-	 {"v":"v_overheads-internal", "e":"Finance - Internal Overheads", "m":["GET"]},
-     {"v":"v_cashboxes", "e":"Finance - Cashboxes", "m":["GET"]},
-	 {"v":"v_journal", "e":"Finance - Journal", "m":["GET"]},
-
-	 {"v":"v_intervals-absence", "e":"Time Intervals - Absences", "m":["GET"]},
-	 {"v":"v_intervals-attendance", "e":"Time Intervals - Attendances", "m":["GET"]},
-	 {"v":"v_intervals-track", "e":"Time Intervals - Time Tracks", "m":["GET"]},
-
-	 {"v":"v_binders", "e":"Binders", "m":["GET"]},
-	 {"v":"v_opportunities", "e":"Opportunities", "m":["GET"]},
-	 {"v":"v_jobs", "e":"Jobs", "m":["GET"]},
-	 {"v":"v_tasks", "e":"Tasks", "m":["GET"]},
-	 {"v":"v_gems", "e":"Gems", "m":["GET"]}
-
-	]`;
-
-  let values2 = JSON.parse(views);
+  const values2 = [
+    { label: "Config - Units",                          parameter: "v_units",                      method: ["GET"] },
+    { label: "Config - Users",                          parameter: "v_users",                      method: ["GET"] },
+    { label: "Config - Groups",                         parameter: "v_groups",                     method: ["GET"] },
+    { label: "Contacts - Companies - All",              parameter: "v_companies",                  method: ["GET"] },
+    { label: "Contacts - Companies - Clients only",     parameter: "v_companies-client",           method: ["GET"] },
+    { label: "Contacts - Companies - Suppliers only",   parameter: "v_companies-supplier",         method: ["GET"] },
+    { label: "Contacts - Persons",                      parameter: "v_persons",                    method: ["GET"] },
+    { label: "Contacts - Brands",                       parameter: "v_brands",                     method: ["GET"] },
+    { label: "Documents - All",                         parameter: "v_documents",                  method: ["GET"] },
+    { label: "Documents - Purchase Orders",             parameter: "v_documents-order-purchase",   method: ["GET"] },
+    { label: "Documents - Sales Quotations",            parameter: "v_documents-quotation-sales",  method: ["GET"] },
+    { label: "Finance - Purchase Invoices",             parameter: "v_invoices-purchase",          method: ["GET"] },
+    { label: "Finance - Sales Invoices",                parameter: "v_invoices-sales",             method: ["GET"] },
+    { label: "Finance - Purchase Internal Documents",   parameter: "v_internals-purchase",         method: ["GET"] },
+    { label: "Finance - Sales Internal Documents",      parameter: "v_internals-sales",            method: ["GET"] },
+    { label: "Finance - Client Overheads",              parameter: "v_overheads-client",           method: ["GET"] },
+    { label: "Finance - Internal Overheads",            parameter: "v_overheads-internal",         method: ["GET"] },
+    { label: "Finance - Cashboxes",                     parameter: "v_cashboxes",                  method: ["GET"] },
+    { label: "Finance - Journal",                       parameter: "v_journal",                    method: ["GET"] },
+    { label: "Time Intervals - Absences",               parameter: "v_intervals-absence",          method: ["GET"] },
+    { label: "Time Intervals - Attendances",            parameter: "v_intervals-attendance",       method: ["GET"] },
+    { label: "Time Intervals - Time Tracks",            parameter: "v_intervals-track",            method: ["GET"] },
+    { label: "Binders",                                 parameter: "v_binders",                    method: ["GET"] },
+    { label: "Opportunities",                           parameter: "v_opportunities",              method: ["GET"] },
+    { label: "Jobs",                                    parameter: "v_jobs",                       method: ["GET"] },
+    { label: "Tasks",                                   parameter: "v_tasks",                      method: ["GET"] },
+    { label: "Gems",                                    parameter: "v_gems",                       method: ["GET"] },
+  ];
 
   function decodeJwt(token) {
     try {
@@ -445,7 +433,7 @@
         $("#node-input-entity").empty();
         for (let value of values) {
           $("#node-input-entity").append(
-            $("<option></option>").attr("value", value.v).text(value.e),
+            $("<option></option>").attr("value", value.parameter).text(value.label),
           );
         }
 
@@ -461,8 +449,8 @@
       function fillMethod(entity) {
         $("#node-input-method").empty();
         for (let value of values) {
-          if (value.v === entity) {
-            for (let method of value.m) {
+          if (value.parameter === entity) {
+            for (let method of value.method) {
               $("#node-input-method").append(
                 $("<option></option>").attr("value", method).text(method),
               );
