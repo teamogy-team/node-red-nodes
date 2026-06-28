@@ -340,7 +340,7 @@
         "type": "global-config",
         "env": [],
         "modules": {
-            "node-red-contrib-teamogy-postgres": "0.0.9"
+            "node-red-contrib-teamogy-postgres": "0.1.0"
         }
     }
 ]
