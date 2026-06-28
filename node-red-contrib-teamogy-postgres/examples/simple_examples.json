@@ -1,0 +1,346 @@
+[
+    {
+        "id": "631c8b028781f767",
+        "type": "function",
+        "z": "9afcf1ca7b501654",
+        "name": "dynamic columns SELECT",
+        "func": "msg.sqlColumns = [\"name\", \"age\"]\nmsg.payload = \"SELECT {columns} FROM sandbox WHERE name = 'John' \"\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 660,
+        "wires": [
+            [
+                "c452f4440d87560b"
+            ]
+        ]
+    },
+    {
+        "id": "c9298333111a0349",
+        "type": "inject",
+        "z": "9afcf1ca7b501654",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 660,
+        "wires": [
+            [
+                "631c8b028781f767"
+            ]
+        ]
+    },
+    {
+        "id": "9cd7e07202e767a2",
+        "type": "debug",
+        "z": "9afcf1ca7b501654",
+        "name": "debug 42",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 840,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "c452f4440d87560b",
+        "type": "postgres-client",
+        "z": "9afcf1ca7b501654",
+        "name": "sandboxDB",
+        "configuration": "360c4c3e4da2dcc9",
+        "debug": true,
+        "x": 650,
+        "y": 660,
+        "wires": [
+            [
+                "9cd7e07202e767a2"
+            ]
+        ]
+    },
+    {
+        "id": "ccf6e248ebbd4ad4",
+        "type": "function",
+        "z": "9afcf1ca7b501654",
+        "name": "dynamic columns INSERT",
+        "func": "msg.sqlColumns = [\"name\", \"age\"]\nmsg.sqlData = { name: \"Alice\", age: 30, role: \"admin\" }\nmsg.payload = \"INSERT INTO sandbox {columns} VALUES {data} RETURNING *\"\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 600,
+        "wires": [
+            [
+                "ca928de8f84b34f7"
+            ]
+        ]
+    },
+    {
+        "id": "a0cac059aae91fed",
+        "type": "inject",
+        "z": "9afcf1ca7b501654",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 600,
+        "wires": [
+            [
+                "ccf6e248ebbd4ad4"
+            ]
+        ]
+    },
+    {
+        "id": "514f68a811c142b9",
+        "type": "debug",
+        "z": "9afcf1ca7b501654",
+        "name": "debug 43",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 840,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "ca928de8f84b34f7",
+        "type": "postgres-client",
+        "z": "9afcf1ca7b501654",
+        "name": "sandboxDB",
+        "configuration": "360c4c3e4da2dcc9",
+        "debug": true,
+        "x": 650,
+        "y": 600,
+        "wires": [
+            [
+                "514f68a811c142b9"
+            ]
+        ]
+    },
+    {
+        "id": "9a9da4bb611f6ca4",
+        "type": "function",
+        "z": "9afcf1ca7b501654",
+        "name": "dynamic columns UPDATE",
+        "func": "msg.sqlColumns = [\"age\"]\nmsg.sqlData = { name: \"Alice\", age: 50, role: \"admin\" }\nmsg.payload = \"UPDATE sandbox {columns} SET {data} WHERE name = 'Alice' RETURNING *\"\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 780,
+        "wires": [
+            [
+                "6b37e5b3c360a1e5"
+            ]
+        ]
+    },
+    {
+        "id": "b8208d18f7df4a75",
+        "type": "inject",
+        "z": "9afcf1ca7b501654",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 780,
+        "wires": [
+            [
+                "9a9da4bb611f6ca4"
+            ]
+        ]
+    },
+    {
+        "id": "8dc245de0f9d30f8",
+        "type": "debug",
+        "z": "9afcf1ca7b501654",
+        "name": "debug 44",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 840,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "6b37e5b3c360a1e5",
+        "type": "postgres-client",
+        "z": "9afcf1ca7b501654",
+        "name": "sandboxDB",
+        "configuration": "360c4c3e4da2dcc9",
+        "debug": true,
+        "x": 650,
+        "y": 780,
+        "wires": [
+            [
+                "8dc245de0f9d30f8"
+            ]
+        ]
+    },
+    {
+        "id": "f8037a42582a4039",
+        "type": "function",
+        "z": "9afcf1ca7b501654",
+        "name": "dynamic columns UPSERT",
+        "func": "msg.sqlColumns = [\"name\", \"age\"]\nmsg.sqlColumnsUpdate = [\"age\"]\nmsg.sqlData = { name: \"Alice\", age: 30, extraField: \"extraValue\" }\nmsg.payload = \"INSERT INTO sandbox {columns} VALUES {data} ON CONFLICT (name) DO UPDATE SET {columnsUpdate} RETURNING *\"\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 720,
+        "wires": [
+            [
+                "9e938f056fc89db9"
+            ]
+        ]
+    },
+    {
+        "id": "2f262174713caa7e",
+        "type": "inject",
+        "z": "9afcf1ca7b501654",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 720,
+        "wires": [
+            [
+                "f8037a42582a4039"
+            ]
+        ]
+    },
+    {
+        "id": "da8ab0ed5fad8a1c",
+        "type": "debug",
+        "z": "9afcf1ca7b501654",
+        "name": "debug 10",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 840,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "9e938f056fc89db9",
+        "type": "postgres-client",
+        "z": "9afcf1ca7b501654",
+        "name": "sandboxDB",
+        "configuration": "360c4c3e4da2dcc9",
+        "debug": false,
+        "x": 650,
+        "y": 720,
+        "wires": [
+            [
+                "da8ab0ed5fad8a1c"
+            ]
+        ]
+    },
+    {
+        "id": "360c4c3e4da2dcc9",
+        "type": "postgres-config",
+        "name": "VladimirMacMini.local/postgres | postgres",
+        "host": "VladimirMacMini.local",
+        "port": 5432,
+        "ssl": false,
+        "db": "postgres",
+        "maxconnections": 10,
+        "idletimeout": "0",
+        "connectiontimeout": 30
+    },
+    {
+        "id": "bafeb5b4dadfc4c5",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-teamogy-postgres": "0.0.9"
+        }
+    }
+]
