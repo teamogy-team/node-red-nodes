@@ -54,7 +54,7 @@ module.exports = function(RED) {
 					database: node.config.db,
 					username: node.config.user,
 					password: node.config.password,
-					ssl: node.config.ssl,
+					ssl: node.config.ssl ? 'require' : false,
 					max: node.config.maxconnections,
 					connection: {
 						application_name: "tf-pg-" + node.id
