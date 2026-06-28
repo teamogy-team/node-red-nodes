@@ -167,6 +167,10 @@ RED.nodes.registerType('postgres-config', {
     <label for="node-input-configuration"><i class="fa fa-globe"></i><span> Connection</span></label>
     <input type="text" id="node-input-configuration">
   </div>
+  <div class="form-row">
+    <label for="node-input-debug"><i class="fa fa-bug"></i><span> Debug mode</span></label>
+    <input type="checkbox" id="node-input-debug" style="width: auto; margin-bottom: 5px;">
+  </div>
 </script>
 
 <script type="text/javascript">
@@ -180,6 +184,9 @@ RED.nodes.registerType('postgres-config', {
     configuration: {
       type: "postgres-config",
       required: true
+    },
+    debug: {
+      value: false
     }
   },
   inputs: 1,
@@ -202,6 +209,11 @@ RED.nodes.registerType('postgres-config', {
     <p>Connect to Postgres database.</p>
 
 	<p>You must configure Connection before using this node.</p>
+
+	<h3>Node settings</h3>
+		<dl class="message-properties">
+			<dt class="optional">Debug mode<span class="property-type">checkbox</span></dt><dd> If checked, the node emits a warning before each query with <code>sql</code> (the payload), and — in dynamic mode — also <code>sqlData</code> and <code>sqlColumns</code>.</dd>
+		</dl>
 	
 	<h3>Connection configuration</h3>
 		<dl class="message-properties">
@@ -219,14 +231,51 @@ RED.nodes.registerType('postgres-config', {
 	
 	<h3>Input - message</h3>
 		<dl class="message-properties">
-			<dd> You can send SQL commands in two ways described below</dd>
-			<dt>msg.payload (required)<span class="property-type">string</span></dt><dd> SQL command(s)</dd>
+			<dt>msg.payload (required)<span class="property-type">string</span></dt><dd> SQL command. For INSERT use <code>{columns}</code> and <code>{data}</code> as placeholders (column list and values). For UPDATE place <code>{data}</code> after <code>SET</code>. For SELECT place <code>{columns}</code> where the column list should appear.</dd>
 			<dd>&nbsp;</dd>
-			<dd> You can send one SQL command, for example</dd>
-			<dd> UPDATE users SET phone = '+420222551500' WHERE id = 15</dd>
+			<dt>msg.sqlData (optional)<span class="property-type">object | object[]</span></dt><dd> Data for dynamic INSERT or UPDATE. If set, the node uses parameterized query mode. An array of objects triggers a bulk insert.</dd>
 			<dd>&nbsp;</dd>
-			<dd> or multiple commands separated by a semicolon</dd>
-			<dd>SELECT * FROM users WHERE id = 15; SELECT * FROM groups WHERE group_name = 'accounting'</dd>
+			<dt>msg.sqlColumns (optional)<span class="property-type">string[]</span></dt>
+			<dd> Array of column names with two roles:</dd>
+			<dd> &nbsp;&nbsp;• with <code>msg.sqlData</code> and both <code>{columns}</code>+<code>{data}</code> in SQL — defines which columns are inserted (<code>{columns}</code> → column list with parens, <code>{data}</code> → values with parens)</dd>
+			<dd> &nbsp;&nbsp;• with <code>msg.sqlData</code> and only <code>{data}</code> — filters columns; the list is embedded inside <code>{data}</code> automatically</dd>
+			<dd> &nbsp;&nbsp;• without <code>msg.sqlData</code> — specifies which columns to read in SELECT; place <code>{columns}</code> in the SQL</dd>
+			<dd>&nbsp;</dd>
+			<dt>msg.sqlColumnsUpdate (optional)<span class="property-type">string[]</span></dt>
+			<dd> Array of column names for UPSERT conflict resolution. Place <code>{columnsUpdate}</code> in SQL — it expands to <code>"col1" = EXCLUDED."col1", "col2" = EXCLUDED."col2"</code>.</dd>
+			<dd>&nbsp;</dd>
+			<dd><b>Plain SQL (backward compatible):</b></dd>
+			<dd><code>msg.payload = "SELECT * FROM users WHERE id = 15"</code></dd>
+			<dd>&nbsp;</dd>
+			<dd><b>Dynamic INSERT with explicit column list</b> — use both <code>{columns}</code> and <code>{data}</code>:</dd>
+			<dd><code>msg.payload = "INSERT INTO users {columns} VALUES {data}"</code></dd>
+			<dd><code>msg.sqlData = { name: "Alice", age: 30, role: "admin" }</code></dd>
+			<dd><code>msg.sqlColumns = ["name", "age"]</code> — only these columns are inserted</dd>
+			<dd> → executes: <code>INSERT INTO users ('name', 'age') VALUES ($1, $2)</code></dd>
+			<dd>&nbsp;</dd>
+			<dd><b>Bulk INSERT</b> — <code>msg.sqlData</code> as array of objects:</dd>
+			<dd><code>msg.payload = "INSERT INTO users {columns} VALUES {data}"</code></dd>
+			<dd><code>msg.sqlData = [{ name: "Alice", age: 30 }, { name: "Bob", age: 25 }]</code></dd>
+			<dd><code>msg.sqlColumns = ["name", "age"]</code></dd>
+			<dd> → executes: <code>INSERT INTO users ('name', 'age') VALUES ($1, $2), ($3, $4)</code></dd>
+			<dd>&nbsp;</dd>
+			<dd><b>Dynamic UPDATE</b> — use <code>{columns}</code> and <code>{data}</code>; <code>{columns}</code> is stripped from SQL and acts as column filter for <code>{data}</code>:</dd>
+			<dd><code>msg.payload = "UPDATE users {columns} SET {data} WHERE id = 5"</code></dd>
+			<dd><code>msg.sqlData = { name: "Alice", age: 30, role: "admin" }</code></dd>
+			<dd><code>msg.sqlColumns = ["age"]</code> — only this column is updated</dd>
+			<dd> → executes: <code>UPDATE users SET "age"=$1 WHERE id = 5</code></dd>
+			<dd>&nbsp;</dd>
+			<dd><b>Dynamic UPSERT</b> — use <code>{columnsUpdate}</code> to auto-generate the ON CONFLICT SET clause:</dd>
+			<dd><code>msg.payload = "INSERT INTO users {columns} VALUES {data} ON CONFLICT (name) DO UPDATE SET {columnsUpdate}"</code></dd>
+			<dd><code>msg.sqlData = { name: "Alice", age: 30, role: "admin" }</code></dd>
+			<dd><code>msg.sqlColumns = ["name", "age"]</code> — columns to insert</dd>
+			<dd><code>msg.sqlColumnsUpdate = ["age"]</code> — columns to update on conflict</dd>
+			<dd> → executes: <code>INSERT INTO users ('name', 'age') VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET "age" = EXCLUDED."age"</code></dd>
+			<dd>&nbsp;</dd>
+			<dd><b>Dynamic SELECT columns</b> — <code>msg.sqlColumns</code> without <code>msg.sqlData</code>:</dd>
+			<dd><code>msg.payload = "SELECT {columns} FROM users WHERE active = true"</code></dd>
+			<dd><code>msg.sqlColumns = ["name", "age"]</code></dd>
+			<dd> → returns only the specified columns; column names are safely quoted</dd>
 			<dd>&nbsp;</dd>
 		</dl>
 		 
