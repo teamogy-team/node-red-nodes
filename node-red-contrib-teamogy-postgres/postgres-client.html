@@ -231,50 +231,40 @@ RED.nodes.registerType('postgres-config', {
 	
 	<h3>Input - message</h3>
 		<dl class="message-properties">
-			<dt>msg.payload (required)<span class="property-type">string</span></dt><dd> SQL command. For INSERT use <code>{columns}</code> and <code>{data}</code> as placeholders (column list and values). For UPDATE place <code>{data}</code> after <code>SET</code>. For SELECT place <code>{columns}</code> where the column list should appear.</dd>
+			<dt>msg.payload (required)<span class="property-type">string</span></dt><dd> SQL command. Use placeholders <code>{columns}</code>, <code>{data}</code>, <code>{columnsUpdate}</code> for dynamic queries.</dd>
 			<dd>&nbsp;</dd>
-			<dt>msg.sqlData (optional)<span class="property-type">object | object[]</span></dt><dd> Data for dynamic INSERT or UPDATE. If set, the node uses parameterized query mode. An array of objects triggers a bulk insert.</dd>
-			<dd>&nbsp;</dd>
-			<dt>msg.sqlColumns (optional)<span class="property-type">string[]</span></dt>
-			<dd> Array of column names with two roles:</dd>
-			<dd> &nbsp;&nbsp;• with <code>msg.sqlData</code> and both <code>{columns}</code>+<code>{data}</code> in SQL — defines which columns are inserted (<code>{columns}</code> → column list with parens, <code>{data}</code> → values with parens)</dd>
-			<dd> &nbsp;&nbsp;• with <code>msg.sqlData</code> and only <code>{data}</code> — filters columns; the list is embedded inside <code>{data}</code> automatically</dd>
-			<dd> &nbsp;&nbsp;• without <code>msg.sqlData</code> — specifies which columns to read in SELECT; place <code>{columns}</code> in the SQL</dd>
-			<dd>&nbsp;</dd>
-			<dt>msg.sqlColumnsUpdate (optional)<span class="property-type">string[]</span></dt>
-			<dd> Array of column names for UPSERT conflict resolution. Place <code>{columnsUpdate}</code> in SQL — it expands to <code>"col1" = EXCLUDED."col1", "col2" = EXCLUDED."col2"</code>.</dd>
+			<dt>msg.sql (optional)<span class="property-type">object</span></dt>
+			<dd> Dynamic query parameters. Property names match the placeholder names in <code>msg.payload</code>:</dd>
+			<dd> &nbsp;&nbsp;• <b>msg.sql.data</b> <code>object | object[]</code> — data for INSERT or UPDATE; array triggers bulk operation</dd>
+			<dd> &nbsp;&nbsp;• <b>msg.sql.columns</b> <code>string[]</code> — column filter: which keys from <code>data</code> are used, or which columns to return in SELECT</dd>
+			<dd> &nbsp;&nbsp;• <b>msg.sql.columnsUpdate</b> <code>string[]</code> — columns for UPSERT conflict resolution; expands <code>{columnsUpdate}</code> to <code>"col" = EXCLUDED."col"</code> pairs</dd>
 			<dd>&nbsp;</dd>
 			<dd><b>Plain SQL (backward compatible):</b></dd>
 			<dd><code>msg.payload = "SELECT * FROM users WHERE id = 15"</code></dd>
 			<dd>&nbsp;</dd>
-			<dd><b>Dynamic INSERT with explicit column list</b> — use both <code>{columns}</code> and <code>{data}</code>:</dd>
+			<dd><b>Dynamic INSERT with explicit column list:</b></dd>
 			<dd><code>msg.payload = "INSERT INTO users {columns} VALUES {data}"</code></dd>
-			<dd><code>msg.sqlData = { name: "Alice", age: 30, role: "admin" }</code></dd>
-			<dd><code>msg.sqlColumns = ["name", "age"]</code> — only these columns are inserted</dd>
+			<dd><code>msg.sql = { data: { name: "Alice", age: 30, role: "admin" }, columns: ["name", "age"] }</code></dd>
 			<dd> → executes: <code>INSERT INTO users ('name', 'age') VALUES ($1, $2)</code></dd>
 			<dd>&nbsp;</dd>
-			<dd><b>Bulk INSERT</b> — <code>msg.sqlData</code> as array of objects:</dd>
+			<dd><b>Bulk INSERT</b> — <code>msg.sql.data</code> as array of objects:</dd>
 			<dd><code>msg.payload = "INSERT INTO users {columns} VALUES {data}"</code></dd>
-			<dd><code>msg.sqlData = [{ name: "Alice", age: 30 }, { name: "Bob", age: 25 }]</code></dd>
-			<dd><code>msg.sqlColumns = ["name", "age"]</code></dd>
+			<dd><code>msg.sql = { data: [{ name: "Alice", age: 30 }, { name: "Bob", age: 25 }], columns: ["name", "age"] }</code></dd>
 			<dd> → executes: <code>INSERT INTO users ('name', 'age') VALUES ($1, $2), ($3, $4)</code></dd>
 			<dd>&nbsp;</dd>
-			<dd><b>Dynamic UPDATE</b> — use <code>{columns}</code> and <code>{data}</code>; <code>{columns}</code> is stripped from SQL and acts as column filter for <code>{data}</code>:</dd>
+			<dd><b>Dynamic UPDATE</b> — <code>{columns}</code> stripped from SQL, acts as column filter for <code>{data}</code>:</dd>
 			<dd><code>msg.payload = "UPDATE users {columns} SET {data} WHERE id = 5"</code></dd>
-			<dd><code>msg.sqlData = { name: "Alice", age: 30, role: "admin" }</code></dd>
-			<dd><code>msg.sqlColumns = ["age"]</code> — only this column is updated</dd>
+			<dd><code>msg.sql = { data: { name: "Alice", age: 30, role: "admin" }, columns: ["age"] }</code></dd>
 			<dd> → executes: <code>UPDATE users SET "age"=$1 WHERE id = 5</code></dd>
 			<dd>&nbsp;</dd>
-			<dd><b>Dynamic UPSERT</b> — use <code>{columnsUpdate}</code> to auto-generate the ON CONFLICT SET clause:</dd>
+			<dd><b>Dynamic UPSERT</b> — <code>{columnsUpdate}</code> auto-generates the ON CONFLICT SET clause:</dd>
 			<dd><code>msg.payload = "INSERT INTO users {columns} VALUES {data} ON CONFLICT (name) DO UPDATE SET {columnsUpdate}"</code></dd>
-			<dd><code>msg.sqlData = { name: "Alice", age: 30, role: "admin" }</code></dd>
-			<dd><code>msg.sqlColumns = ["name", "age"]</code> — columns to insert</dd>
-			<dd><code>msg.sqlColumnsUpdate = ["age"]</code> — columns to update on conflict</dd>
+			<dd><code>msg.sql = { data: { name: "Alice", age: 30, role: "admin" }, columns: ["name", "age"], columnsUpdate: ["age"] }</code></dd>
 			<dd> → executes: <code>INSERT INTO users ('name', 'age') VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET "age" = EXCLUDED."age"</code></dd>
 			<dd>&nbsp;</dd>
-			<dd><b>Dynamic SELECT columns</b> — <code>msg.sqlColumns</code> without <code>msg.sqlData</code>:</dd>
+			<dd><b>Dynamic SELECT columns:</b></dd>
 			<dd><code>msg.payload = "SELECT {columns} FROM users WHERE active = true"</code></dd>
-			<dd><code>msg.sqlColumns = ["name", "age"]</code></dd>
+			<dd><code>msg.sql = { columns: ["name", "age"] }</code></dd>
 			<dd> → returns only the specified columns; column names are safely quoted</dd>
 			<dd>&nbsp;</dd>
 		</dl>

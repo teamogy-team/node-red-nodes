@@ -45,14 +45,16 @@ msg.payload = "SELECT * FROM users WHERE id = 15; SELECT * FROM groups WHERE gro
 
 ### Dynamic SQL
 
-Use placeholders in `msg.payload` together with `msg.sqlData`, `msg.sqlColumns`, and/or `msg.sqlColumnsUpdate` to build parameterized queries dynamically. Column names are automatically quoted to prevent SQL injection.
+Use placeholders in `msg.payload` together with the `msg.sql` object to build parameterized queries dynamically. Column names are automatically quoted to prevent SQL injection.
+
+The property names inside `msg.sql` match exactly the placeholder names in `msg.payload`:
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `msg.payload` | string | SQL with optional placeholders: `{columns}`, `{data}`, `{columnsUpdate}` |
-| `msg.sqlData` | object \| object[] | Data for INSERT or UPDATE. An array triggers a bulk operation. |
-| `msg.sqlColumns` | string[] | Column filter — selects which keys from `msg.sqlData` are used, or which columns to return in SELECT |
-| `msg.sqlColumnsUpdate` | string[] | Columns to update in UPSERT conflict resolution; expands `{columnsUpdate}` to `"col" = EXCLUDED."col"` pairs |
+| `msg.sql.data` | object \| object[] | Data for INSERT or UPDATE. An array triggers a bulk operation. |
+| `msg.sql.columns` | string[] | Column filter — selects which keys from `data` are used, or which columns to return in SELECT |
+| `msg.sql.columnsUpdate` | string[] | Columns for UPSERT conflict resolution; expands `{columnsUpdate}` to `"col" = EXCLUDED."col"` pairs |
 
 #### Placeholders
 
@@ -69,18 +71,22 @@ Use placeholders in `msg.payload` together with `msg.sqlData`, `msg.sqlColumns`,
 #### INSERT with explicit column list
 
 ```js
-msg.payload    = "INSERT INTO users {columns} VALUES {data}"
-msg.sqlData    = { name: "Alice", age: 30, role: "admin" }
-msg.sqlColumns = ["name", "age"]   // only these columns are inserted
+msg.payload = "INSERT INTO users {columns} VALUES {data}"
+msg.sql = {
+    data: { name: "Alice", age: 30, role: "admin" },
+    columns: ["name", "age"]   // only these columns are inserted
+}
 ```
 → executes: `INSERT INTO users ("name", "age") VALUES ($1, $2)`
 
 #### Bulk INSERT
 
 ```js
-msg.payload    = "INSERT INTO users {columns} VALUES {data}"
-msg.sqlData    = [{ name: "Alice", age: 30 }, { name: "Bob", age: 25 }]
-msg.sqlColumns = ["name", "age"]
+msg.payload = "INSERT INTO users {columns} VALUES {data}"
+msg.sql = {
+    data: [{ name: "Alice", age: 30 }, { name: "Bob", age: 25 }],
+    columns: ["name", "age"]
+}
 ```
 → executes: `INSERT INTO users ("name", "age") VALUES ($1, $2), ($3, $4)`
 
@@ -89,27 +95,31 @@ msg.sqlColumns = ["name", "age"]
 `{columns}` is stripped from the SQL and acts only as a column filter directive for `{data}`.
 
 ```js
-msg.payload          = "UPDATE users {columns} SET {data} WHERE id = 5"
-msg.sqlData          = { name: "Alice", age: 30, role: "admin" }
-msg.sqlColumns       = ["age"]   // only this column is updated
+msg.payload = "UPDATE users {columns} SET {data} WHERE id = 5"
+msg.sql = {
+    data: { name: "Alice", age: 30, role: "admin" },
+    columns: ["age"]   // only this column is updated
+}
 ```
 → executes: `UPDATE users SET "age"=$1 WHERE id = 5`
 
 #### UPSERT (INSERT … ON CONFLICT DO UPDATE)
 
 ```js
-msg.payload          = "INSERT INTO users {columns} VALUES {data} ON CONFLICT (name) DO UPDATE SET {columnsUpdate}"
-msg.sqlData          = { name: "Alice", age: 30, role: "admin" }
-msg.sqlColumns       = ["name", "age"]   // columns to insert
-msg.sqlColumnsUpdate = ["age"]           // columns to update on conflict
+msg.payload = "INSERT INTO users {columns} VALUES {data} ON CONFLICT (name) DO UPDATE SET {columnsUpdate}"
+msg.sql = {
+    data: { name: "Alice", age: 30, role: "admin" },
+    columns: ["name", "age"],   // columns to insert
+    columnsUpdate: ["age"]      // columns to update on conflict
+}
 ```
 → executes: `INSERT INTO users ("name", "age") VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET "age" = EXCLUDED."age"`
 
 #### Dynamic SELECT columns
 
 ```js
-msg.payload    = "SELECT {columns} FROM users WHERE active = true"
-msg.sqlColumns = ["name", "age"]
+msg.payload = "SELECT {columns} FROM users WHERE active = true"
+msg.sql = { columns: ["name", "age"] }
 ```
 → returns only the specified columns; names are safely quoted
 

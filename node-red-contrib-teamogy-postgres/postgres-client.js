@@ -35,15 +35,14 @@ module.exports = function(RED) {
 	
 	function buildQuery(sql, qs, sqlData, sqlColumns, sqlColumnsUpdate) {
 		const escapeCol = col => '"' + String(col).replace(/"/g, '""') + '"';
-		const DATA_PH    = '{data}';
-		const COL_PH     = '{columns}';
-		const UPCOL_PH   = '{columnsUpdate}';
+		const DATA_PH  = '{data}';
+		const COL_PH   = '{columns}';
+		const UPCOL_PH = '{columnsUpdate}';
 
 		if (sqlColumnsUpdate !== undefined && qs.includes(UPCOL_PH)) {
-			const updateFrag = sqlColumnsUpdate.map(col =>
+			qs = qs.replace(UPCOL_PH, sqlColumnsUpdate.map(col =>
 				escapeCol(col) + ' = EXCLUDED.' + escapeCol(col)
-			).join(', ');
-			qs = qs.replace(UPCOL_PH, updateFrag);
+			).join(', '));
 		}
 
 		const hasDataPH = qs.includes(DATA_PH);
@@ -53,9 +52,8 @@ module.exports = function(RED) {
 			const rows    = Array.isArray(sqlData) ? sqlData : [sqlData];
 			const columns = sqlColumns ? [].concat(sqlColumns) : Object.keys(rows[0]);
 
-			if (hasDataPH && hasColsPH) {
+			if (hasColsPH && hasDataPH) {
 				if (/\binsert\b/i.test(qs)) {
-					// INSERT: {columns} → ("col1","col2")   {data} → ($1,$2),($3,$4)
 					const colList = '(' + columns.map(escapeCol).join(', ') + ')';
 					const params  = [];
 					const values  = rows.map(row =>
@@ -63,7 +61,6 @@ module.exports = function(RED) {
 					).join(', ');
 					return sql.unsafe(qs.replace(COL_PH, colList).replace(DATA_PH, values), params);
 				} else {
-					// UPDATE/other: {columns} stripped, {data} via Builder using columns as filter
 					const strippedQs = qs.replace(COL_PH, '');
 					const fragment = sql(sqlData, columns);
 					const idx = strippedQs.indexOf(DATA_PH);
@@ -71,19 +68,27 @@ module.exports = function(RED) {
 				}
 			}
 
-			// Only {data}: use postgres.js Builder (handles INSERT/UPDATE context via keyword detection)
-			const fragment = sqlColumns ? sql(sqlData, sqlColumns) : sql(sqlData);
 			if (hasDataPH) {
+				const fragment = sqlColumns ? sql(sqlData, sqlColumns) : sql(sqlData);
 				const idx = qs.indexOf(DATA_PH);
 				return sql`${sql.unsafe(qs.slice(0, idx))}${fragment}${sql.unsafe(qs.slice(idx + DATA_PH.length))}`;
 			}
+
+			if (hasColsPH) {
+				return sql.unsafe(qs.replace(COL_PH, columns.map(escapeCol).join(', ')));
+			}
+
+			// no placeholders: append Builder to end
+			const fragment = sqlColumns ? sql(sqlData, sqlColumns) : sql(sqlData);
 			return sql`${sql.unsafe(qs)} ${fragment}`;
 		}
 
-		// sqlColumns only → dynamic SELECT columns
-		const escapedCols = sqlColumns.map(escapeCol).join(', ');
-		const finalSql = hasColsPH ? qs.replace(COL_PH, escapedCols) : qs + ' ' + escapedCols;
-		return sql.unsafe(finalSql);
+		// sqlData not set: {columns} from sqlColumns
+		if (hasColsPH && sqlColumns) {
+			return sql.unsafe(qs.replace(COL_PH, sqlColumns.map(escapeCol).join(', ')));
+		}
+
+		return sql.unsafe(qs);
 	}
 
 	function postgresClient(config) {
@@ -135,35 +140,42 @@ module.exports = function(RED) {
 					return;
 				}
 
-				if (msg.sqlData !== undefined) {
-					const t = typeof msg.sqlData;
-					if (msg.sqlData === null || (t !== 'object')) {
-						node.error("msg.sqlData must be an object or array", msg);
+				if (msg.sql !== undefined) {
+					if (typeof msg.sql !== 'object' || msg.sql === null || Array.isArray(msg.sql)) {
+						node.error("msg.sql must be a plain object", msg);
 						return;
+					}
+					if (msg.sql.data !== undefined) {
+						const t = typeof msg.sql.data;
+						if (msg.sql.data === null || t !== 'object') {
+							node.error("msg.sql.data must be an object or array", msg);
+							return;
+						}
+					}
+					if (msg.sql.columns !== undefined) {
+						if (!Array.isArray(msg.sql.columns) || msg.sql.columns.length === 0) {
+							node.error("msg.sql.columns must be a non-empty array", msg);
+							return;
+						}
+					}
+					if (msg.sql.columnsUpdate !== undefined) {
+						if (!Array.isArray(msg.sql.columnsUpdate) || msg.sql.columnsUpdate.length === 0) {
+							node.error("msg.sql.columnsUpdate must be a non-empty array", msg);
+							return;
+						}
 					}
 				}
 
-				if (msg.sqlColumns !== undefined) {
-					if (!Array.isArray(msg.sqlColumns) || msg.sqlColumns.length === 0) {
-						node.error("msg.sqlColumns must be a non-empty array", msg);
-						return;
-					}
-				}
-
-				if (msg.sqlColumnsUpdate !== undefined) {
-					if (!Array.isArray(msg.sqlColumnsUpdate) || msg.sqlColumnsUpdate.length === 0) {
-						node.error("msg.sqlColumnsUpdate must be a non-empty array", msg);
-						return;
-					}
-				}
-
-				const isDynamic = msg.sqlData !== undefined || msg.sqlColumns !== undefined || msg.sqlColumnsUpdate !== undefined;
+				const isDynamic = msg.sql !== undefined;
 
 				if (node.debug) {
+					const sqlData          = msg.sql?.data;
+					const sqlColumns       = msg.sql?.columns;
+					const sqlColumnsUpdate = msg.sql?.columnsUpdate;
 					let displaySql = qs;
-					if (msg.sqlData !== undefined && qs.includes('{columns}') && qs.includes('{data}')) {
-						const rows = Array.isArray(msg.sqlData) ? msg.sqlData : [msg.sqlData];
-						const cols = msg.sqlColumns ? [].concat(msg.sqlColumns) : Object.keys(rows[0]);
+					if (sqlData !== undefined && qs.includes('{columns}') && qs.includes('{data}')) {
+						const rows = Array.isArray(sqlData) ? sqlData : [sqlData];
+						const cols = sqlColumns ? [].concat(sqlColumns) : Object.keys(rows[0]);
 						if (/\binsert\b/i.test(qs)) {
 							let p = 0;
 							displaySql = qs
@@ -177,27 +189,31 @@ module.exports = function(RED) {
 								.replace('{columns}', '')
 								.replace('{data}', cols.map(col => col + '=$' + ++p).join(', '));
 						}
-					} else if (msg.sqlData === undefined && msg.sqlColumns !== undefined) {
+					} else if (sqlData !== undefined && qs.includes('{columns}') && !qs.includes('{data}')) {
+						const rows = Array.isArray(sqlData) ? sqlData : [sqlData];
+						const cols = sqlColumns ? [].concat(sqlColumns) : Object.keys(rows[0]);
+						displaySql = qs.replace('{columns}', cols.join(', '));
+					} else if (sqlData === undefined && sqlColumns !== undefined) {
 						displaySql = qs.includes('{columns}')
-							? qs.replace('{columns}', msg.sqlColumns.join(', '))
-							: qs + ' ' + msg.sqlColumns.join(', ');
+							? qs.replace('{columns}', sqlColumns.join(', '))
+							: qs + ' ' + sqlColumns.join(', ');
 					}
-					if (msg.sqlColumnsUpdate !== undefined && displaySql.includes('{columnsUpdate}')) {
-						const updateFrag = msg.sqlColumnsUpdate.map(col => col + ' = EXCLUDED.' + col).join(', ');
+					if (sqlColumnsUpdate !== undefined && displaySql.includes('{columnsUpdate}')) {
+						const updateFrag = sqlColumnsUpdate.map(col => col + ' = EXCLUDED.' + col).join(', ');
 						displaySql = displaySql.replace('{columnsUpdate}', updateFrag);
 					}
 					const debugInfo = { sql: displaySql };
-					if (msg.sqlData !== undefined)          debugInfo.sqlData          = msg.sqlData;
-					if (msg.sqlColumns !== undefined)       debugInfo.sqlColumns       = msg.sqlColumns;
-					if (msg.sqlColumnsUpdate !== undefined) debugInfo.sqlColumnsUpdate = msg.sqlColumnsUpdate;
-					node.warn(debugInfo);
+					if (sqlData !== undefined)          debugInfo.data          = sqlData;
+					if (sqlColumns !== undefined)       debugInfo.columns       = sqlColumns;
+					if (sqlColumnsUpdate !== undefined) debugInfo.columnsUpdate = sqlColumnsUpdate;
+					node.warn(JSON.stringify(debugInfo));
 				}
 
 				const doAsyncJobs = async () => {
 					try {
 						let q;
 						if (isDynamic) {
-							q = await buildQuery(sql, qs, msg.sqlData, msg.sqlColumns, msg.sqlColumnsUpdate);
+							q = await buildQuery(sql, qs, msg.sql.data, msg.sql.columns, msg.sql.columnsUpdate);
 						} else {
 							q = await sql`${sql.unsafe(qs)}`.simple();
 						}

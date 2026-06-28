@@ -4,7 +4,7 @@
         "type": "function",
         "z": "9afcf1ca7b501654",
         "name": "dynamic columns SELECT",
-        "func": "msg.sqlColumns = [\"name\", \"age\"]\nmsg.payload = \"SELECT {columns} FROM sandbox WHERE name = 'John' \"\nreturn msg;",
+        "func": "msg.sql = { columns: [\"name\", \"age\"] }\nmsg.payload = \"SELECT {columns} FROM sandbox WHERE name = 'John'\"\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -85,7 +85,7 @@
         "type": "function",
         "z": "9afcf1ca7b501654",
         "name": "dynamic columns INSERT",
-        "func": "msg.sqlColumns = [\"name\", \"age\"]\nmsg.sqlData = { name: \"Alice\", age: 30, role: \"admin\" }\nmsg.payload = \"INSERT INTO sandbox {columns} VALUES {data} RETURNING *\"\n\nreturn msg;",
+        "func": "msg.sql = { data: { name: \"Alice\", age: 30, role: \"admin\" }, columns: [\"name\", \"age\"] }\nmsg.payload = \"INSERT INTO sandbox {columns} VALUES {data} RETURNING *\"\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -166,7 +166,7 @@
         "type": "function",
         "z": "9afcf1ca7b501654",
         "name": "dynamic columns UPDATE",
-        "func": "msg.sqlColumns = [\"age\"]\nmsg.sqlData = { name: \"Alice\", age: 50, role: \"admin\" }\nmsg.payload = \"UPDATE sandbox {columns} SET {data} WHERE name = 'Alice' RETURNING *\"\n\nreturn msg;",
+        "func": "msg.sql = { data: { name: \"Alice\", age: 50, role: \"admin\" }, columns: [\"age\"] }\nmsg.payload = \"UPDATE sandbox {columns} SET {data} WHERE name = 'Alice' RETURNING *\"\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -247,7 +247,7 @@
         "type": "function",
         "z": "9afcf1ca7b501654",
         "name": "dynamic columns UPSERT",
-        "func": "msg.sqlColumns = [\"name\", \"age\"]\nmsg.sqlColumnsUpdate = [\"age\"]\nmsg.sqlData = { name: \"Alice\", age: 30, extraField: \"extraValue\" }\nmsg.payload = \"INSERT INTO sandbox {columns} VALUES {data} ON CONFLICT (name) DO UPDATE SET {columnsUpdate} RETURNING *\"\n\nreturn msg;",
+        "func": "msg.sql = { data: { name: \"Alice\", age: 30, extraField: \"extraValue\" }, columns: [\"name\", \"age\"], columnsUpdate: [\"age\"] }\nmsg.payload = \"INSERT INTO sandbox {columns} VALUES {data} ON CONFLICT (name) DO UPDATE SET {columnsUpdate} RETURNING *\"\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -340,7 +340,7 @@
         "type": "global-config",
         "env": [],
         "modules": {
-            "node-red-contrib-teamogy-postgres": "0.1.0"
+            "node-red-contrib-teamogy-postgres": "0.1.1"
         }
     }
 ]
