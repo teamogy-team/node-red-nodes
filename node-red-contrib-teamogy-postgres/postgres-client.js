@@ -126,41 +126,42 @@ module.exports = function(RED) {
 				node.status({fill: "red", shape: "ring", text: "connect error"});
 			}
 
-			node.on('input', async function(msg) {
+			node.on('input', async function(msg, send, done) {
+				send = send || node.send.bind(node);
 
 				if (!sql) {
-					node.error("No database connection", msg);
+					done(new Error("No database connection"));
 					return;
 				}
 
 				const qs = msg.payload;
 
 				if (typeof qs !== 'string' || !qs.trim()) {
-					node.error("msg.payload must be a non-empty SQL string", msg);
+					done(new Error("msg.payload must be a non-empty SQL string"));
 					return;
 				}
 
 				if (msg.sql !== undefined) {
 					if (typeof msg.sql !== 'object' || msg.sql === null || Array.isArray(msg.sql)) {
-						node.error("msg.sql must be a plain object", msg);
+						done(new Error("msg.sql must be a plain object"));
 						return;
 					}
 					if (msg.sql.data !== undefined) {
 						const t = typeof msg.sql.data;
 						if (msg.sql.data === null || t !== 'object') {
-							node.error("msg.sql.data must be an object or array", msg);
+							done(new Error("msg.sql.data must be an object or array"));
 							return;
 						}
 					}
 					if (msg.sql.columns !== undefined) {
 						if (!Array.isArray(msg.sql.columns) || msg.sql.columns.length === 0) {
-							node.error("msg.sql.columns must be a non-empty array", msg);
+							done(new Error("msg.sql.columns must be a non-empty array"));
 							return;
 						}
 					}
 					if (msg.sql.columnsUpdate !== undefined) {
 						if (!Array.isArray(msg.sql.columnsUpdate) || msg.sql.columnsUpdate.length === 0) {
-							node.error("msg.sql.columnsUpdate must be a non-empty array", msg);
+							done(new Error("msg.sql.columnsUpdate must be a non-empty array"));
 							return;
 						}
 					}
@@ -220,7 +221,6 @@ module.exports = function(RED) {
 						node.status({fill: "green", shape: "dot", text: "query ok"});
 						return [0, q];
 					} catch (e) {
-						node.error(e, msg);
 						node.status({fill: "red", shape: "ring", text: "query error"});
 						return [1, e];
 					}
@@ -229,11 +229,12 @@ module.exports = function(RED) {
 				const r = await doAsyncJobs();
 
 				if (r[0] === 0) {
-					msg.payload = r[1];
-					msg.count = r[1].length;
+					msg.payload = Array.from(r[1]);
+					msg.count = msg.payload.length;
 					delete msg.error;
-					node.send(msg);
-				} else if (r[0] === 1) {
+					send(msg);
+					done();
+				} else {
 					const e = r[1];
 					msg.payload = '';
 					msg.error = {
@@ -243,7 +244,8 @@ module.exports = function(RED) {
 						hint: e.hint
 					};
 					msg.count = 0;
-					node.send(msg);
+					send(msg);
+					done(e);
 				}
 
 			});
