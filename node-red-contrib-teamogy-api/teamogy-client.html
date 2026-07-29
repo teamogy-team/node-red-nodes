@@ -1,13 +1,14 @@
 <script type="text/javascript">
   const values1 = [
-    { label: "Config - Users",             parameter: "r_users",     method: ["GET", "POST", "PATCH"] },
-    { label: "Config - Units",             parameter: "r_agencies",  method: ["GET", "POST", "PATCH"] },
-    { label: "Contacts - Companies",       parameter: "r_companies", method: ["GET", "POST", "PATCH"] },
-    { label: "Contacts - Persons",         parameter: "r_persons",   method: ["GET", "POST", "PATCH"] },
-    { label: "Documents",                  parameter: "r_documents", method: ["GET", "POST", "PATCH"] },
-    { label: "Jobs",                       parameter: "r_jobs",      method: ["GET", "POST", "PATCH"] },
-    { label: "Tasks",                      parameter: "r_tasks",     method: ["GET", "POST", "PATCH"] },
-    { label: "Time",                       parameter: "r_time",      method: ["POST"] },
+    { label: "Config - Capability",        parameter: "r_capability", method: ["GET"] },
+    { label: "Config - Users",             parameter: "r_users",      method: ["GET", "POST", "PATCH"] },
+    { label: "Config - Units",             parameter: "r_agencies",   method: ["GET", "POST", "PATCH"] },
+    { label: "Contacts - Companies",       parameter: "r_companies",  method: ["GET", "POST", "PATCH"] },
+    { label: "Contacts - Persons",         parameter: "r_persons",    method: ["GET", "POST", "PATCH"] },
+    { label: "Documents",                  parameter: "r_documents",  method: ["GET", "POST", "PATCH"] },
+    { label: "Jobs",                       parameter: "r_jobs",       method: ["GET", "POST", "PATCH"] },
+    { label: "Tasks",                      parameter: "r_tasks",      method: ["GET", "POST", "PATCH"] },
+    { label: "Time",                       parameter: "r_time",       method: ["POST"] },
   ];
 
   const values2 = [
@@ -628,10 +629,19 @@
       >
     </dt>
     <dd>check for requests for API views (see description below)</dd>
-    <dt>Token (required)<span class="property-type">selection - list</span></dt>
-    <dd>select the desired entity</dd>
     <dt>
-      Req/min (required)<span class="property-type">selection - list</span>
+      Select entity (required)<span class="property-type">selection - list</span>
+    </dt>
+    <dd>select the desired entity</dd>
+    <dd>&nbsp;</dd>
+    <dd>
+      <b>Config - Capability</b> (<code>r_capability</code>) is available with the
+      <code>GET</code> method only and is not available for API views. It calls:
+    </dd>
+    <dd><code>GET https://subdomain.teamogy.com/rest/v1/{unit}/capability</code></dd>
+    <dd>&nbsp;</dd>
+    <dt>
+      Select method (required)<span class="property-type">selection - list</span>
     </dt>
     <dd>select an available method</dd>
     <dt>

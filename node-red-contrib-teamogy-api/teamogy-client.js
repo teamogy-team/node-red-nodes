@@ -36,6 +36,7 @@ module.exports = function(RED) {
 
 				let o = {
 					url: url,
+					body: options.body,
 					status: response.status,
 					message: await response.text() ?? '',
 					attempt: i + 1,
@@ -48,6 +49,7 @@ module.exports = function(RED) {
 			} catch (error) {
 				let o = {
 					url: url,
+					body: options.body,
 					status: 0,
 					message: 'Request failed: ' + error.message,
 					attempt: i + 1,
