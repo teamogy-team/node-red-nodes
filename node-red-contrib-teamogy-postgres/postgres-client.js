@@ -119,7 +119,17 @@ module.exports = function(RED) {
 						application_name: "tf-pg-" + node.id
 					},
 					idle_timeout: node.config.idletimeout,
-					connect_timeout: node.config.connectiontimeout
+					connect_timeout: node.config.connectiontimeout,
+					types: {
+						// Vrací date/timestamp/timestamptz jako ISO string, ne JS Date.
+						// Díky tomu jde na hodnotu volat .split('T')[0] bez .toISOString().
+						date: {
+							to: 1184,
+							from: [1082, 1114, 1184], // date, timestamp, timestamptz
+							serialize: x => (x instanceof Date ? x : new Date(x)).toISOString(),
+							parse: x => new Date(x).toISOString()
+						}
+					}
 				});
 			} catch (error) {
 				node.error(error);
