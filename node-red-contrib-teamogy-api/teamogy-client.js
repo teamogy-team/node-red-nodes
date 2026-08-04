@@ -1,5 +1,24 @@
 function isEmpty(value) { return (value == null || (typeof value === "string" && value.trim().length === 0)); }
 
+function parseEventStream(text) {
+	const events = [];
+
+	for (const chunk of text.split(/\r?\n\r?\n/)) {
+		const lines = chunk.split(/\r?\n/).filter(line => line.startsWith('data:'));
+		if (lines.length == 0) { continue }
+
+		const payload = lines.map(line => line.slice(5).trim()).join('\n');
+		if (payload == '' || payload == '[DONE]') { continue }
+
+		try { events.push(JSON.parse(payload)); } catch (e) { events.push(payload); }
+	}
+
+	const done = events.findLast(event => event?.type === 'done');
+	if (done) { return done.data?.response ?? done.data ?? done }
+
+	return events;
+}
+
 module.exports = function(RED) {
 
 	if (typeof globalNextAvailableSlot === 'undefined') {
@@ -138,6 +157,7 @@ module.exports = function(RED) {
 					let moffset = 0
 					let entity = ''
 					let method = 'GET'
+					let suffix = ''
 					let delay = 0;
 					let repeat = 5;
 					let rdelay = 30;
@@ -168,6 +188,7 @@ module.exports = function(RED) {
 						if(typeof msg.offset == 'number') { moffset = msg.offset }
 						if(typeof msg.unit == 'number') { munit = msg.unit }
 						if(typeof msg.entity == 'string') { entity = msg.entity } else { entity = data.entity }
+						if(typeof msg.suffix == 'string') { suffix = msg.suffix } else { suffix = data.suffix }
 						if(typeof msg.method == 'string') { method = msg.method } else { method = data.method }
 						if(typeof msg.delay == 'number') { delay = msg.delay * 1000 } else { delay = data.delay * 1000 }
 						if(typeof msg.repeat == 'number') { repeat = msg.repeat ?? 5 } else { repeat = data.repeat ?? 5 }
@@ -204,6 +225,7 @@ module.exports = function(RED) {
 						moffset = data.offset
 						entity = data.entity
 						method = data.method
+						suffix = data.suffix
 						delay = data.delay * 1000
 						repeat = data.repeat ?? 5
 						rdelay = data.rdelay * 1000
@@ -220,7 +242,9 @@ module.exports = function(RED) {
 					if(entity.split('_')[0] == 'v') { url = url + 'views/'}
 					
 					url = url + entity.substring(entity.indexOf('_') + 1).replaceAll('-','.')
-					
+
+					if(!isEmpty(suffix)) { url = url + '/' + suffix.trim() }
+
 					if(!isEmpty(mparams)) { url = url + '?' + mparams }
 					
 					const doAsyncJobs = async () => {
@@ -308,9 +332,14 @@ module.exports = function(RED) {
                                 const response = await fetchWithRetry(encodeURI(url), { headers, method, body }, repeat, rdelay, node, apiLimit);
 
 								if(response && response.status >= 200 && response.status < 300) {
-									const body = await response.json();
-									msg.payload = body
-									node.send(msg);	
+									const ctype = response.headers?.get('content-type') ?? ''
+
+									if(ctype.includes('text/event-stream')) {
+										msg.payload = parseEventStream(await response.text())
+									} else {
+										msg.payload = await response.json()
+									}
+									node.send(msg);
 								} else {
 									if (!response) {
                                         msg.error = 'Request failed after all attempts.'

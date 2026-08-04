@@ -1,14 +1,20 @@
 <script type="text/javascript">
   const values1 = [
-    { label: "Config - Capability",        parameter: "r_capability", method: ["GET"] },
-    { label: "Config - Users",             parameter: "r_users",      method: ["GET", "POST", "PATCH"] },
-    { label: "Config - Units",             parameter: "r_agencies",   method: ["GET", "POST", "PATCH"] },
-    { label: "Contacts - Companies",       parameter: "r_companies",  method: ["GET", "POST", "PATCH"] },
-    { label: "Contacts - Persons",         parameter: "r_persons",    method: ["GET", "POST", "PATCH"] },
-    { label: "Documents",                  parameter: "r_documents",  method: ["GET", "POST", "PATCH"] },
-    { label: "Jobs",                       parameter: "r_jobs",       method: ["GET", "POST", "PATCH"] },
-    { label: "Tasks",                      parameter: "r_tasks",      method: ["GET", "POST", "PATCH"] },
-    { label: "Time",                       parameter: "r_time",       method: ["POST"] },
+    { label: "Config - Capability",                 parameter: "r_capability",         method: ["GET"] },
+    { label: "Config - Users",                      parameter: "r_users",              method: ["GET", "POST", "PATCH"] },
+    { label: "Config - Units",                      parameter: "r_agencies",           method: ["GET", "POST", "PATCH"] },
+    { label: "Config - Registers (by key)",         parameter: "r_registers",          method: ["GET"] },
+    { label: "Config - Register (by key & subkey)", parameter: "r_register",           method: ["GET"] },
+    { label: "Connectors - Run",                    parameter: "r_connector",          method: ["POST"], suffix: "Connector name" },
+    { label: "Contacts - Companies",                parameter: "r_companies",          method: ["GET", "POST", "PATCH"] },
+    { label: "Contacts - Persons",                  parameter: "r_persons",            method: ["GET", "POST", "PATCH"] },
+    { label: "Depots",                              parameter: "r_depots",             method: ["GET", "POST"] },
+    { label: "Discussion - Threads",                parameter: "r_discussion/threads", method: ["GET", "POST"] },
+    { label: "Discussion - Post",                   parameter: "r_discussion/records", method: ["POST"] },
+    { label: "Documents",                           parameter: "r_documents",          method: ["GET", "POST", "PATCH"] },
+    { label: "Jobs",                                parameter: "r_jobs",               method: ["GET", "POST", "PATCH"] },
+    { label: "Tasks",                               parameter: "r_tasks",              method: ["GET", "POST", "PATCH"] },
+    { label: "Time",                                parameter: "r_time",               method: ["POST"] },
   ];
 
   const values2 = [
@@ -239,6 +245,11 @@
   	</select>
     </div>
 
+    <div class="form-row" id="node-row-suffix" style="display: none;">
+  	<label for="node-input-suffix" style="width: 130px" id="node-label-suffix"><i class="fa fa-plug"></i> Name</label>
+  	<input type="text" id="node-input-suffix" style="width:65%" placeholder="HOLIDAYS">
+    </div>
+
     <div class="form-row">
   	<label for="node-input-source" style="width: 130px"><i class="fa fa-caret-down"></i> Source</label>
   	<select id="node-input-source" style='width:65%'>
@@ -335,6 +346,9 @@
       entity: {
         value: "r_users",
       },
+      suffix: {
+        value: "",
+      },
       source: {
         value: "static",
       },
@@ -427,6 +441,7 @@
         }
         let se = fillEntity(values);
         fillMethod(se);
+        fillSuffix(se);
       });
 
       function fillEntity(values) {
@@ -437,7 +452,7 @@
           );
         }
 
-        const fe = $("#node-input-entity option[value=" + entity + "]").val();
+        const fe = $("#node-input-entity option[value='" + entity + "']").val();
         if (fe != undefined) {
           $("#node-input-entity").val(entity);
         } else {
@@ -458,7 +473,7 @@
           }
         }
 
-        const fe = $("#node-input-method option[value=" + method + "]").val();
+        const fe = $("#node-input-method option[value='" + method + "']").val();
         if (fe != undefined) {
           $("#node-input-method").val(method);
         } else {
@@ -466,9 +481,24 @@
         }
       }
 
+      function fillSuffix(entity) {
+        const def = values.find((value) => value.parameter === entity);
+        if (def && def.suffix) {
+          $("#node-label-suffix").html('<i class="fa fa-plug"></i> ' + def.suffix);
+          $("#node-row-suffix").show();
+        } else {
+          $("#node-row-suffix").hide();
+        }
+      }
+
       $("#node-input-entity").on("change", function () {
         fillMethod($(this).val());
+        fillSuffix($(this).val());
       });
+
+      let se = fillEntity(values);
+      fillMethod(se);
+      fillSuffix(se);
 
       $("#node-input-source").on("change", function () {
         if ($(this).val() == "static") {
@@ -554,6 +584,7 @@
       this.mode = $("#node-input-mode").is(":checked");
       this.entity = $("#node-input-entity").val();
       this.method = $("#node-input-method").val();
+      this.suffix = $("#node-input-suffix").val();
       this.source = $("#node-input-source").val();
       this.merge = $("#node-input-merge").is(":checked");
       this.bodysource = $("#node-input-body-source").val();
@@ -639,6 +670,73 @@
       <code>GET</code> method only and is not available for API views. It calls:
     </dd>
     <dd><code>GET https://subdomain.teamogy.com/rest/v1/{unit}/capability</code></dd>
+    <dd>&nbsp;</dd>
+    <dd>
+      <b>Config - Registers</b> (<code>r_registers</code>) is available with the
+      <code>GET</code> method only and is not available for API views. It calls:
+    </dd>
+    <dd><code>GET https://subdomain.teamogy.com/rest/v1/{unit}/registers</code></dd>
+    <dd>&nbsp;</dd>
+    <dd>
+      <b>Config - Register</b> (<code>r_register</code>) is available with the
+      <code>GET</code> method only and is not available for API views. It calls:
+    </dd>
+    <dd><code>GET https://subdomain.teamogy.com/rest/v1/{unit}/register</code></dd>
+    <dd>&nbsp;</dd>
+    <dd>
+      <b>Connectors - Run</b> (<code>r_connector</code>) is available with the
+      <code>POST</code> method only and is not available for API views. It requires the
+      <b>Connector name</b> field, which is appended to the URL as the last path
+      segment:
+    </dd>
+    <dd>
+      <code>POST https://subdomain.teamogy.com/rest/v1/{unit}/connector/{connector name}</code>
+    </dd>
+    <dd>
+      This endpoint answers with a Server-Sent Events stream
+      (<code>Content-Type: text/event-stream</code>). The node waits until the stream is
+      closed, parses all <code>data:</code> events and puts only the payload of the
+      final <code>done</code> event (its <code>data.response</code>) into
+      <code>msg.payload</code>. If no <code>done</code> event arrives, the array of all
+      parsed events is returned instead.
+    </dd>
+    <dd>&nbsp;</dd>
+    <dd>
+      <b>Depots</b> (<code>r_depots</code>) is available with the <code>GET</code> and
+      <code>POST</code> methods and is not available for API views. It calls:
+    </dd>
+    <dd><code>GET https://subdomain.teamogy.com/rest/v1/{unit}/depots</code></dd>
+    <dd><code>POST https://subdomain.teamogy.com/rest/v1/{unit}/depots</code></dd>
+    <dd>&nbsp;</dd>
+    <dd>
+      <b>Discussion - Threads</b> (<code>r_discussion/threads</code>) is available with
+      the <code>GET</code> and <code>POST</code> methods and is not available for API
+      views. <code>GET</code> returns the list of discussion threads,
+      <code>POST</code> creates a new one:
+    </dd>
+    <dd>
+      <code>GET https://subdomain.teamogy.com/rest/v1/{unit}/discussion/threads</code>
+    </dd>
+    <dd>
+      <code>POST https://subdomain.teamogy.com/rest/v1/{unit}/discussion/threads</code>
+    </dd>
+    <dd>&nbsp;</dd>
+    <dd>Body example for <code>POST</code>:</dd>
+    <dd>{</dd>
+    <dd>&nbsp;&nbsp;"name": "Thread name",</dd>
+    <dd>&nbsp;&nbsp;"userIds": [6, 7],</dd>
+    <dd>&nbsp;&nbsp;"ownerId": 7,</dd>
+    <dd>&nbsp;&nbsp;"isPrivate": false</dd>
+    <dd>}</dd>
+    <dd>&nbsp;</dd>
+    <dd>
+      <b>Discussion - Post</b> (<code>r_discussion/records</code>) is available with the
+      <code>POST</code> method only and is not available for API views. It adds a new
+      post to a discussion thread:
+    </dd>
+    <dd>
+      <code>POST https://subdomain.teamogy.com/rest/v1/{unit}/discussion/records</code>
+    </dd>
     <dd>&nbsp;</dd>
     <dt>
       Select method (required)<span class="property-type">selection - list</span>
@@ -811,6 +909,15 @@
     <dd>
       replaces entity from configuration, use v_entityName for views or
       r_entityName
+    </dd>
+    <dt class="optional">
+      Name (optional in message, msg.suffix)<span class="property-type"
+        >string</span
+      >
+    </dt>
+    <dd>
+      replaces the additional name field (e.g. Connector name) from configuration, it
+      is appended to the URL as the last path segment
     </dd>
     <dt class="optional">
       Method (optional in message, msg.method)<span class="property-type"
