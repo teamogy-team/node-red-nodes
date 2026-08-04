@@ -91,6 +91,16 @@ module.exports = function(RED) {
 		return sql.unsafe(qs);
 	}
 
+	// Postgres.js vrací instance Result (extends Array) a u .simple() dotazů
+	// dokonce pole Resultů (jeden na každý statement). Node-RED klonuje msg přes
+	// lodash.clonedeep, které na class constructoru spadne:
+	// "Class constructor Result cannot be invoked without 'new'".
+	// Rekurzivně proto vše převedeme na obyčejná pole. Řádky samotné jsou
+	// obyčejné objekty ({}), takže se jich to netýká.
+	function toPlainArray(v) {
+		return Array.isArray(v) ? Array.from(v, toPlainArray) : v;
+	}
+
 	function postgresClient(config) {
 		try {
 			var node = this;
@@ -239,7 +249,7 @@ module.exports = function(RED) {
 				const r = await doAsyncJobs();
 
 				if (r[0] === 0) {
-					msg.payload = Array.from(r[1]);
+					msg.payload = toPlainArray(r[1]);
 					msg.count = msg.payload.length;
 					delete msg.error;
 					send(msg);
