@@ -159,7 +159,7 @@ module.exports = function(RED) {
 					let method = 'GET'
 					let suffix = ''
 					let delay = 0;
-					let repeat = 5;
+					let repeat = 0;
 					let rdelay = 30;
 					let mtoken = token
 					let mhost = host
@@ -191,7 +191,7 @@ module.exports = function(RED) {
 						if(typeof msg.suffix == 'string') { suffix = msg.suffix } else { suffix = data.suffix }
 						if(typeof msg.method == 'string') { method = msg.method } else { method = data.method }
 						if(typeof msg.delay == 'number') { delay = msg.delay * 1000 } else { delay = data.delay * 1000 }
-						if(typeof msg.repeat == 'number') { repeat = msg.repeat ?? 5 } else { repeat = data.repeat ?? 5 }
+						if(typeof msg.repeat == 'number') { repeat = msg.repeat ?? 0 } else { repeat = data.repeat ?? 0 }
 						if(typeof msg.rdelay == 'number') { rdelay = msg.rdelay * 1000 } else { rdelay = data.rdelay * 1000 }
 
 						if(typeof msg.connection == 'string') {
@@ -227,7 +227,7 @@ module.exports = function(RED) {
 						method = data.method
 						suffix = data.suffix
 						delay = data.delay * 1000
-						repeat = data.repeat ?? 5
+						repeat = data.repeat ?? 0
 						rdelay = data.rdelay * 1000
 					}
 
