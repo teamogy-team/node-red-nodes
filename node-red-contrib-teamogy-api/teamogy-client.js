@@ -53,6 +53,18 @@ module.exports = function(RED) {
 					return response;
 				}
 
+				// Client errors (4xx) are permanent - hand the response back so the
+				// caller can route the error body, no point retrying.
+				if (response.status >= 400 && response.status < 500) {
+					return response;
+				}
+
+				// Other errors (5xx, ...) - retry; on the last attempt return the
+				// response with its body intact so the caller can route it too.
+				if (i === retries) {
+					return response;
+				}
+
 				let o = {
 					url: url,
 					body: options.body,
@@ -256,14 +268,57 @@ module.exports = function(RED) {
 							let rdata = [];
 							
 							let offset = moffset
-							
+
 							if(method == 'GET') { body = null }
+
+							// Handles an error response. When the second output is enabled
+							// (data.useerror) the error is routed to output 2, otherwise it is
+							// only reported via node.warn (the original behaviour).
+							// Returns false only when the node is closing (nothing sent).
+							const sendError = async (response) => {
+								let statusCode = 0;
+								let errText = '';
+								let errBody = null;
+
+								if (response) {
+									if (response.status == 0) { return false; }
+									statusCode = response.status;
+									try { errText = await response.text(); } catch (e) {}
+									errBody = errText;
+									try { errBody = JSON.parse(errText); } catch (e) {}
+								}
+
+								if (data.useerror === true) {
+									if (!response) {
+										msg.error = 'Request failed after all attempts.';
+										msg.payload = null;
+										msg.statusCode = 500;
+									} else {
+										msg.payload = errBody;
+										msg.statusCode = statusCode;
+										msg.error = (errBody && typeof errBody === 'object' && errBody.message)
+											? errBody.message
+											: ('Response status: ' + statusCode);
+									}
+									node.send([null, msg]);
+								} else {
+									node.warn({
+										url: url,
+										body: body,
+										status: response ? statusCode : 0,
+										message: response ? errText : 'Request failed after all attempts.'
+									});
+								}
+								return true;
+							};
 							
-							if(entity.split('_')[0] == 'v') { 
+							if(entity.split('_')[0] == 'v') {
 								if(isEmpty(mparams)) { url = url + '?' } else { url = url + '&' }
-								
+
 								const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-								
+
+								let hadError = false;
+
 								while (offset != null && node.closingId != clientid) {
 									
 									if(parseInt(mlimit) == 0) { mlimit = 1000000000}
@@ -300,23 +355,13 @@ module.exports = function(RED) {
 										if (offset != null && delay > 0) { await sleep(delay); }
 										
 									} else {
-                                        if (!response) {
-											msg.error = 'Request failed after all attempts.'
-											msg.payload = null;
-											if(msg.res){
-												msg.payload = 'Request failed after all attempts.';
-												msg.statusCode = 500;
-											}
-											node.send(msg);
-                                        } else if(response.status != 0) {
-                                            node.error('Response status: ' + response.status);
-                                            node.error('Response text: ' + await response.text());
-                                        }
+										hadError = true;
+										await sendError(response);
 										break;
-									}	
-								} 
-								
-								if(mmerge == true) {
+									}
+								}
+
+								if(mmerge == true && !hadError) {
 									let body = {}
 									metadata.limit = parseInt(mpaging)
 									body.metadata = metadata
@@ -341,18 +386,7 @@ module.exports = function(RED) {
 									}
 									node.send(msg);
 								} else {
-									if (!response) {
-                                        msg.error = 'Request failed after all attempts.'
-										msg.payload = null;
-										if(msg.res){
-											msg.payload = 'Request failed after all attempts.';
-											msg.statusCode = 500;
-										}
-										node.send(msg);
-                                    } else if(response.status != 0) {
-										node.error('Response status: ' + response.status);
-                                        node.error('Response text: ' + await response.text());
-                                    }
+									await sendError(response);
 								}
 							}
 						} catch (e) {

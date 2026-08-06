@@ -347,6 +347,10 @@
   	  <label for="node-input-rdelay" style="width: 130px"><i class="fa fa-clock-o"></i><span> Req. delay (s)</span></label>
   	  <input type="number" id="node-input-rdelay"  min="0" max="600" step="1" style="width:20%">
   	</div>
+  	<div class="form-row">
+  	  <label for="node-input-useerror" style="width: 130px"><i class="fa fa-random"></i><span> Use second output</span></label>
+  	  <input type="checkbox" id="node-input-useerror" style="width:20px;">
+  	</div>
     </div>
 
   </div>
@@ -416,9 +420,18 @@
         value: 30,
         required: true,
       },
+      useerror: {
+        value: false,
+      },
+      outputs: {
+        value: 1,
+      },
     },
     inputs: 1,
     outputs: 1,
+    outputLabels: function (i) {
+      return i === 0 ? "response" : "error";
+    },
     icon: "bridge.svg",
     align: "left",
     label: function () {
@@ -448,7 +461,13 @@
       $("#node-input-repeat").val(this.repeat);
       $("#node-input-rdelay").val(this.rdelay);
 
+      this.useerror = (this.useerror === true);
+      if (this.outputs !== 1 && this.outputs !== 2) {
+        this.outputs = this.useerror ? 2 : 1;
+      }
+
       $("#node-input-mode").prop("checked", this.mode);
+      $("#node-input-useerror").prop("checked", this.useerror);
       $("#node-input-body-source").val(this.bodysource);
 
       if (this.mode === true) {
@@ -625,6 +644,8 @@
         delete this.editorResizeObserver;
       }
       this.mode = $("#node-input-mode").is(":checked");
+      this.useerror = $("#node-input-useerror").is(":checked");
+      this.outputs = this.useerror ? 2 : 1;
       this.entity = $("#node-input-entity").val();
       this.method = $("#node-input-method").val();
       this.suffix = $("#node-input-suffix").val();
@@ -659,6 +680,26 @@
       delete this.editorb;
     },
   });
+
+  // Backward-compatibility migration: nodes deployed with an older version may have
+  // "outputs" persisted in the flow (e.g. 2) while "useerror" is unset. On load, align
+  // the number of outputs with the "Use second output" setting (unset => 1 output).
+  (function () {
+    if (typeof RED !== "undefined" && RED.events && !RED.__teamogyOutputsMigrated) {
+      RED.__teamogyOutputsMigrated = true;
+      RED.events.on("nodes:add", function (node) {
+        if (!node || node.type !== "teamogy-client") { return; }
+        var want = (node.useerror === true) ? 2 : 1;
+        if (node.outputs !== want) {
+          node.outputs = want;
+          if (Array.isArray(node.wires)) {
+            if (want === 1 && node.wires.length > 1) { node.wires = [node.wires[0] || []]; }
+            if (want === 2 && node.wires.length < 2) { node.wires = [node.wires[0] || [], []]; }
+          }
+        }
+      });
+    }
+  })();
 </script>
 
 <script type="text/html" data-help-name="teamogy-client">
@@ -977,14 +1018,36 @@
     </dd>
   </dl>
 
-  <h3>Output</h3>
+  <h3>Outputs</h3>
+  <p>
+    When <b>Use second output</b> is enabled the node has two outputs. Successful
+    responses (HTTP 2xx) are sent to the first output (<b>response</b>), error responses
+    are sent to the second output (<b>error</b>). When it is disabled the node has a
+    single output and errors are only reported via <code>node.warn</code> (shown in the
+    debug sidebar), as before.
+  </p>
+  <h4>1. response</h4>
   <dl class="message-properties">
     <dt>payload<span class="property-type">string | object</span></dt>
     <dd>the standard output of the response</dd>
     <dt>count<span class="property-type">number</span></dt>
     <dd>number of records in the output</dd>
+    <dt>msg.*<span class="property-type">string | object</span></dt>
+    <dd>all properties of the input message</dd>
+  </dl>
+  <h4>2. error</h4>
+  <dl class="message-properties">
+    <dt>payload<span class="property-type">string | object</span></dt>
+    <dd>
+      the body returned by the API for a failed request, parsed as JSON when possible
+      (e.g. <code>{ "code": "...", "message": "...", ... }</code>), otherwise the raw
+      text. For a request that failed without a response (after all retry attempts) it
+      is <code>null</code>.
+    </dd>
+    <dt>statusCode<span class="property-type">number</span></dt>
+    <dd>the HTTP status code of the failed request (500 when no response was received)</dd>
     <dt>error<span class="property-type">string</span></dt>
-    <dd>error message</dd>
+    <dd>error message (the <code>message</code> field of the body when present)</dd>
     <dt>msg.*<span class="property-type">string | object</span></dt>
     <dd>all properties of the input message</dd>
   </dl>
