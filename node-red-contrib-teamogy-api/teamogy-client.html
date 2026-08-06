@@ -29,6 +29,8 @@
     { label: "Documents - All",                         parameter: "v_documents",                  method: ["GET"] },
     { label: "Documents - Purchase Orders",             parameter: "v_documents-order-purchase",   method: ["GET"] },
     { label: "Documents - Sales Quotations",            parameter: "v_documents-quotation-sales",  method: ["GET"] },
+    { label: "Documents - Contract",                    parameter: "v_documents-contract",         method: ["GET"] },
+    { label: "Documents - Contract Validity",           parameter: "v_documents-contract-validity", method: ["GET"] },
     { label: "Finance - Purchase Invoices",             parameter: "v_invoices-purchase",          method: ["GET"] },
     { label: "Finance - Sales Invoices",                parameter: "v_invoices-sales",             method: ["GET"] },
     { label: "Finance - Purchase Internal Documents",   parameter: "v_internals-purchase",         method: ["GET"] },
@@ -206,11 +208,37 @@
   .dynamic-dropdown-row {
     padding: 6px 0;
   }
+  .teamogy-resizable-editor {
+    resize: vertical;
+    overflow: hidden;
+    min-height: 60px;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--red-ui-form-input-border-color, #ccc);
+    border-radius: 4px;
+  }
+  .teamogy-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .teamogy-row > label {
+    flex: 0 0 130px !important;
+    width: 130px !important;
+    margin: 0 !important;
+  }
+  .teamogy-row > input:not([type=hidden]),
+  .teamogy-row > select,
+  .teamogy-row > .red-ui-typedInput-container {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0;
+  }
 </style>
 
 <script type="text/x-red" data-template-name="teamogy-client">
 
-   <div class="form-row">
+   <div class="form-row teamogy-row">
      <label for="node-input-name" style="width: 130px"><i class="icon-tag"></i><span>Name</span></label>
      <input type="text" id="node-input-name" placeholder="name" style="width:65%">
    </div>
@@ -223,7 +251,7 @@
 
      <div id="config-tab-config" style="display: none;">
 
-    <div class="form-row">
+    <div class="form-row teamogy-row">
   	<label for="node-input-configuration" style="width: 130px"><i class="fa fa-globe"></i><span> Connection</span></label>
   	<input type="text" id="node-input-configuration" style="width:65%">
     </div>
@@ -233,24 +261,24 @@
   	<input type="checkbox" id="node-input-mode" style=" width:20px;">
     </div>
 
-    <div class="form-row">
+    <div class="form-row teamogy-row">
   	<label for="node-input-entity" style="width: 130px"><i class="fa fa-caret-down"></i> Select entity</label>
   	<select id="node-input-entity" style="width:65%">
   	</select>
     </div>
 
-    <div class="form-row">
+    <div class="form-row teamogy-row">
   	<label for="node-input-method" style="width: 130px"><i class="fa fa-caret-down"></i> Select method</label>
   	<select id="node-input-method" style="width:65%">
   	</select>
     </div>
 
-    <div class="form-row" id="node-row-suffix" style="display: none;">
+    <div class="form-row teamogy-row" id="node-row-suffix" style="display: none;">
   	<label for="node-input-suffix" style="width: 130px" id="node-label-suffix"><i class="fa fa-plug"></i> Name</label>
   	<input type="text" id="node-input-suffix" style="width:65%" placeholder="CONNECTOR SUBKEY">
     </div>
 
-    <div class="form-row">
+    <div class="form-row teamogy-row">
   	<label for="node-input-source" style="width: 130px"><i class="fa fa-caret-down"></i> Source</label>
   	<select id="node-input-source" style='width:65%'>
   	  <option value="static">Static command</option>
@@ -263,13 +291,13 @@
   	  <label for="node-input-params" style="width: 130px"><i class="fa fa-code"></i> Parameters</label>
   	</div>
   	<div class="form-row">
-  	  <div style="height: 100px; min-height:100px; width:65%;" class="node-text-editor" id="node-input-params"></div>
+  	  <div style="height: 100px;" class="node-text-editor teamogy-resizable-editor" id="node-input-params"></div>
   	</div>
   	<div class="form-row">
   	  <label for="node-input-body" style="width: 130px"><i class="fa fa-code"></i> Body</label>
   	</div>
   	<div class="form-row">
-  	  <div style="height: 100px; min-height:100px; width:65%;" class="node-text-editor" id="node-input-body"></div>
+  	  <div style="height: 100px;" class="node-text-editor teamogy-resizable-editor" id="node-input-body"></div>
   	</div>
     </div>
 
@@ -300,7 +328,7 @@
     </div>
 
     <div class="form-row" id="node-row-editor-dynamic">
-  	<div class="form-row">
+  	<div class="form-row teamogy-row">
   	  <label for="node-input-params" style="width: 130px"><i class="fa fa-code"></i> Source of body</label>
   	  <input type="text" id="node-input-body-source" style="width: 65%">
   	  <input type="hidden" id="node-input-body-source-type" style="width: 0px">
@@ -567,6 +595,17 @@
         value: this.cbody,
       });
 
+      const editorp = this.editorp;
+      const editorb = this.editorb;
+      if (typeof ResizeObserver !== "undefined") {
+        this.editorResizeObserver = new ResizeObserver(function () {
+          editorp.resize();
+          editorb.resize();
+        });
+        this.editorResizeObserver.observe(document.getElementById("node-input-params"));
+        this.editorResizeObserver.observe(document.getElementById("node-input-body"));
+      }
+
       const tabs = RED.tabs.create({
         id: "config-tabs",
         onchange: function (tab) {
@@ -581,6 +620,10 @@
       });
     },
     oneditsave: function () {
+      if (this.editorResizeObserver) {
+        this.editorResizeObserver.disconnect();
+        delete this.editorResizeObserver;
+      }
       this.mode = $("#node-input-mode").is(":checked");
       this.entity = $("#node-input-entity").val();
       this.method = $("#node-input-method").val();
@@ -605,6 +648,10 @@
       delete this.editorb;
     },
     oneditcancel: function () {
+      if (this.editorResizeObserver) {
+        this.editorResizeObserver.disconnect();
+        delete this.editorResizeObserver;
+      }
       this.editorp.destroy();
       delete this.editorp;
 
