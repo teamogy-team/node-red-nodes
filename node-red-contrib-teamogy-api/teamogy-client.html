@@ -1,52 +1,52 @@
 <script type="text/javascript">
   const values1 = [
-    { label: "Config - Capability",                 parameter: "r_capability",         method: ["GET"] },
-    { label: "Config - Users",                      parameter: "r_users",              method: ["GET", "POST", "PATCH"] },
-    { label: "Config - Units",                      parameter: "r_agencies",           method: ["GET", "POST", "PATCH"] },
-    { label: "Config - Registers (by key)",         parameter: "r_registers",          method: ["GET"] },
-    { label: "Config - Register (by key & subkey)", parameter: "r_register",           method: ["GET"] },
-    { label: "Connectors",                          parameter: "r_connector",          method: ["POST"], suffix: "Connector name" },
-    { label: "Contacts - Companies",                parameter: "r_companies",          method: ["GET", "POST", "PATCH"] },
-    { label: "Contacts - Persons",                  parameter: "r_persons",            method: ["GET", "POST", "PATCH"] },
-    { label: "Depots",                              parameter: "r_depots",             method: ["GET", "POST"] },
-    { label: "Discussion - Threads",                parameter: "r_discussion/threads", method: ["GET", "POST"] },
-    { label: "Discussion - Post",                   parameter: "r_discussion/records", method: ["POST"] },
-    { label: "Documents",                           parameter: "r_documents",          method: ["GET", "POST", "PATCH"] },
-    { label: "Jobs",                                parameter: "r_jobs",               method: ["GET", "POST", "PATCH"] },
-    { label: "Tasks",                               parameter: "r_tasks",              method: ["GET", "POST", "PATCH"] },
-    { label: "Time",                                parameter: "r_time",               method: ["POST"] },
+    { label: "Config - Capability",                 parameter: "r_capability",         method: ["GET"],                   hintParameters: "" , hintBody: ""},
+    { label: "Config - Users",                      parameter: "r_users",              method: ["GET", "POST", "PATCH"],  hintParameters: "isDraft=false&isDisabled=false&primaryAgencyId={{unitId}}&id={{userId}}" , hintBody: ""},
+    { label: "Config - Units",                      parameter: "r_agencies",           method: ["GET", "POST", "PATCH"],  hintParameters: "isDraft=false&isDisabled=false" , hintBody: ""},
+    { label: "Config - Registers (by key)",         parameter: "r_registers",          method: ["GET"],                   hintParameters: "key=CATEGORY.JOB&muf=false" , hintBody: ""},
+    { label: "Config - Register (by key & subkey)", parameter: "r_register",           method: ["GET"],                   hintParameters: "key=TIME.WORK&subkey=DEFAULT&muf=false&relevantOnly=true" , hintBody: "", hintUrl: "https://readme.teamogy.com/reference/integration-options"},
+    { label: "Connectors",                          parameter: "r_connector",          method: ["POST"],                  suffix: "Connector name" },
+    { label: "Contacts - Companies",                parameter: "r_companies",          method: ["GET", "POST", "PATCH"],  hintParameters: "isDisabled=false" , hintBody: ""},
+    { label: "Contacts - Persons",                  parameter: "r_persons",            method: ["GET", "POST", "PATCH"],  hintParameters: "isDisabled=false" , hintBody: ""},
+    { label: "Depots",                              parameter: "r_depots",             method: ["GET", "POST"],           hintParameters: "isDisabled=false" , hintBody: ""},
+    { label: "Discussion - Threads",                parameter: "r_discussion/threads", method: ["GET", "POST"],           hintParameters: "" , hintBody: ""},
+    { label: "Discussion - Post",                   parameter: "r_discussion/records", method: ["POST"],                  hintParameters: "" , hintBody: ""},
+    { label: "Documents",                           parameter: "r_documents",          method: ["GET", "POST", "PATCH"],  hintParameters: "" , hintBody: ""},
+    { label: "Jobs",                                parameter: "r_jobs",               method: ["GET", "POST", "PATCH"],  hintParameters: "" , hintBody: ""},
+    { label: "Tasks",                               parameter: "r_tasks",              method: ["GET", "POST", "PATCH"],  hintParameters: "" , hintBody: ""},
+    { label: "Time",                                parameter: "r_time",               method: ["POST"],                  hintParameters: "" , hintBody: ""},
   ];
 
   const values2 = [
-    { label: "Config - Units",                          parameter: "v_units",                      method: ["GET"] },
-    { label: "Config - Users",                          parameter: "v_users",                      method: ["GET"] },
-    { label: "Config - Groups",                         parameter: "v_groups",                     method: ["GET"] },
-    { label: "Contacts - Companies - All",              parameter: "v_companies",                  method: ["GET"] },
-    { label: "Contacts - Companies - Clients only",     parameter: "v_companies-client",           method: ["GET"] },
-    { label: "Contacts - Companies - Suppliers only",   parameter: "v_companies-supplier",         method: ["GET"] },
-    { label: "Contacts - Persons",                      parameter: "v_persons",                    method: ["GET"] },
-    { label: "Contacts - Brands",                       parameter: "v_brands",                     method: ["GET"] },
-    { label: "Documents - All",                         parameter: "v_documents",                  method: ["GET"] },
-    { label: "Documents - Purchase Orders",             parameter: "v_documents-order-purchase",   method: ["GET"] },
-    { label: "Documents - Sales Quotations",            parameter: "v_documents-quotation-sales",  method: ["GET"] },
-    { label: "Documents - Contract",                    parameter: "v_documents-contract",         method: ["GET"] },
-    { label: "Documents - Contract Validity",           parameter: "v_documents-contract-validity", method: ["GET"] },
-    { label: "Finance - Purchase Invoices",             parameter: "v_invoices-purchase",          method: ["GET"] },
-    { label: "Finance - Sales Invoices",                parameter: "v_invoices-sales",             method: ["GET"] },
-    { label: "Finance - Purchase Internal Documents",   parameter: "v_internals-purchase",         method: ["GET"] },
-    { label: "Finance - Sales Internal Documents",      parameter: "v_internals-sales",            method: ["GET"] },
-    { label: "Finance - Client Overheads",              parameter: "v_overheads-client",           method: ["GET"] },
-    { label: "Finance - Internal Overheads",            parameter: "v_overheads-internal",         method: ["GET"] },
-    { label: "Finance - Cashboxes",                     parameter: "v_cashboxes",                  method: ["GET"] },
-    { label: "Finance - Journal",                       parameter: "v_journal",                    method: ["GET"] },
-    { label: "Time Intervals - Absences",               parameter: "v_intervals-absence",          method: ["GET"] },
-    { label: "Time Intervals - Attendances",            parameter: "v_intervals-attendance",       method: ["GET"] },
-    { label: "Time Intervals - Time Tracks",            parameter: "v_intervals-track",            method: ["GET"] },
-    { label: "Binders",                                 parameter: "v_binders",                    method: ["GET"] },
-    { label: "Opportunities",                           parameter: "v_opportunities",              method: ["GET"] },
-    { label: "Jobs",                                    parameter: "v_jobs",                       method: ["GET"] },
-    { label: "Tasks",                                   parameter: "v_tasks",                      method: ["GET"] },
-    { label: "Gems",                                    parameter: "v_gems",                       method: ["GET"] },
+    { label: "Config - Units",                          parameter: "v_units",                      method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Config - Users",                          parameter: "v_users",                      method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Config - Groups",                         parameter: "v_groups",                     method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Contacts - Companies - All",              parameter: "v_companies",                  method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Contacts - Companies - Clients only",     parameter: "v_companies-client",           method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Contacts - Companies - Suppliers only",   parameter: "v_companies-supplier",         method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Contacts - Persons",                      parameter: "v_persons",                    method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Contacts - Brands",                       parameter: "v_brands",                     method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Documents - All",                         parameter: "v_documents",                  method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Documents - Purchase Orders",             parameter: "v_documents-order-purchase",   method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Documents - Sales Quotations",            parameter: "v_documents-quotation-sales",  method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Documents - Contract",                    parameter: "v_documents-contract",         method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Documents - Contract Validity",           parameter: "v_documents-contract-validity", method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Finance - Purchase Invoices",             parameter: "v_invoices-purchase",          method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Finance - Sales Invoices",                parameter: "v_invoices-sales",             method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Finance - Purchase Internal Documents",   parameter: "v_internals-purchase",         method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Finance - Sales Internal Documents",      parameter: "v_internals-sales",            method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Finance - Client Overheads",              parameter: "v_overheads-client",           method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Finance - Internal Overheads",            parameter: "v_overheads-internal",         method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Finance - Cashboxes",                     parameter: "v_cashboxes",                  method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Finance - Journal",                       parameter: "v_journal",                    method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Time Intervals - Absences",               parameter: "v_intervals-absence",          method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Time Intervals - Attendances",            parameter: "v_intervals-attendance",       method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Time Intervals - Time Tracks",            parameter: "v_intervals-track",            method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Binders",                                 parameter: "v_binders",                    method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Opportunities",                           parameter: "v_opportunities",              method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Jobs",                                    parameter: "v_jobs",                       method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Tasks",                                   parameter: "v_tasks",                      method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
+    { label: "Gems",                                    parameter: "v_gems",                       method: ["GET"], hintUrl: "https://readme.teamogy.com/reference/views" },
   ];
 
   function decodeJwt(token) {
@@ -290,11 +290,19 @@
   	<div class="form-row">
   	  <label for="node-input-params" style="width: 130px"><i class="fa fa-code"></i> Parameters</label>
   	</div>
+  	<div class="form-row" id="node-row-params-hint" style="display: none; margin-bottom: 5px;">
+  	  <span style="display: block; font-size: 0.85em; color: var(--red-ui-secondary-text-color, #888); margin-bottom: 2px;">hint: <a id="node-params-hint-url" href="#" target="_blank" rel="noopener noreferrer" style="display: none; white-space: nowrap;"><i class="fa fa-external-link"></i>&nbsp;documentation</a></span>
+  	  <code id="node-params-hint" style="display: block; font-size: 0.85em; padding: 4px 6px; white-space: pre-wrap; word-break: break-all; background: var(--red-ui-form-input-background, #f7f7f7); border: 1px solid var(--red-ui-form-input-border-color, #ccc); border-radius: 4px; color: var(--red-ui-secondary-text-color, #888);"></code>
+  	</div>
   	<div class="form-row">
   	  <div style="height: 100px;" class="node-text-editor teamogy-resizable-editor" id="node-input-params"></div>
   	</div>
   	<div class="form-row">
   	  <label for="node-input-body" style="width: 130px"><i class="fa fa-code"></i> Body</label>
+  	</div>
+  	<div class="form-row" id="node-row-body-hint" style="display: none; margin-bottom: 5px;">
+  	  <label style="display: block; font-size: 0.85em; color: var(--red-ui-secondary-text-color, #888); margin-bottom: 2px;">hint:</label>
+  	  <code id="node-body-hint" style="display: block; font-size: 0.85em; padding: 4px 6px; white-space: pre-wrap; word-break: break-all; background: var(--red-ui-form-input-background, #f7f7f7); border: 1px solid var(--red-ui-form-input-border-color, #ccc); border-radius: 4px; color: var(--red-ui-secondary-text-color, #888);"></code>
   	</div>
   	<div class="form-row">
   	  <div style="height: 100px;" class="node-text-editor teamogy-resizable-editor" id="node-input-body"></div>
@@ -498,6 +506,7 @@
         let se = fillEntity(values);
         fillMethod(se);
         fillSuffix(se);
+        fillHints(se);
       });
 
       function fillEntity(values) {
@@ -547,14 +556,46 @@
         }
       }
 
+      function fillHints(entity) {
+        const def = values.find((value) => value.parameter === entity);
+        const fallbackHintUrl = "https://readme.teamogy.com/";
+
+        if (def) {
+          $("#node-params-hint-url").attr("href", def.hintUrl || fallbackHintUrl).show();
+        } else {
+          $("#node-params-hint-url").attr("href", "#").hide();
+        }
+
+        if (def && def.hintParameters) {
+          $("#node-params-hint").text(def.hintParameters).show();
+        } else {
+          $("#node-params-hint").hide();
+        }
+
+        if (def) {
+          $("#node-row-params-hint").show();
+        } else {
+          $("#node-row-params-hint").hide();
+        }
+
+        if (def && def.hintBody) {
+          $("#node-body-hint").text(def.hintBody);
+          $("#node-row-body-hint").show();
+        } else {
+          $("#node-row-body-hint").hide();
+        }
+      }
+
       $("#node-input-entity").on("change", function () {
         fillMethod($(this).val());
         fillSuffix($(this).val());
+        fillHints($(this).val());
       });
 
       let se = fillEntity(values);
       fillMethod(se);
       fillSuffix(se);
+      fillHints(se);
 
       $("#node-input-source").on("change", function () {
         if ($(this).val() == "static") {
