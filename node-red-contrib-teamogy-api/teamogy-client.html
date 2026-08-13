@@ -353,6 +353,11 @@
   	</div>
     </div>
 
+    <div class="form-row">
+  	<label for="node-input-debug" style="width: 130px"><i class="fa fa-bug"></i><span> Debug mode</span></label>
+  	<input type="checkbox" id="node-input-debug" style="width:20px;">
+    </div>
+
   </div>
    </div>
 </script>
@@ -423,6 +428,9 @@
       useerror: {
         value: false,
       },
+      debug: {
+        value: false,
+      },
       outputs: {
         value: 1,
       },
@@ -468,6 +476,7 @@
 
       $("#node-input-mode").prop("checked", this.mode);
       $("#node-input-useerror").prop("checked", this.useerror);
+      $("#node-input-debug").prop("checked", this.debug === true);
       $("#node-input-body-source").val(this.bodysource);
 
       if (this.mode === true) {
@@ -645,6 +654,7 @@
       }
       this.mode = $("#node-input-mode").is(":checked");
       this.useerror = $("#node-input-useerror").is(":checked");
+      this.debug = $("#node-input-debug").is(":checked");
       this.outputs = this.useerror ? 2 : 1;
       this.entity = $("#node-input-entity").val();
       this.method = $("#node-input-method").val();
@@ -1015,6 +1025,17 @@
     <dd>
       replaces method from configuration, use the available method for the given
       entity
+    </dd>
+    <dt class="optional">
+      Debug mode (optional in message, msg.debug)<span class="property-type"
+        >boolean</span
+      >
+    </dt>
+    <dd>
+      when enabled, the node emits a <code>node.warn</code> with the request data
+      (<code>method</code>, <code>url</code> including query parameters and
+      <code>body</code>) before each request and with the response data after each
+      response. Can also be toggled per message with <code>msg.debug</code>.
     </dd>
   </dl>
 

@@ -173,6 +173,7 @@ module.exports = function(RED) {
 					let delay = 0;
 					let repeat = 0;
 					let rdelay = 30;
+					let mdebug = data.debug === true;
 					let mtoken = token
 					let mhost = host
 					let munit = unit
@@ -205,6 +206,7 @@ module.exports = function(RED) {
 						if(typeof msg.delay == 'number') { delay = msg.delay * 1000 } else { delay = data.delay * 1000 }
 						if(typeof msg.repeat == 'number') { repeat = msg.repeat ?? 0 } else { repeat = data.repeat ?? 0 }
 						if(typeof msg.rdelay == 'number') { rdelay = msg.rdelay * 1000 } else { rdelay = data.rdelay * 1000 }
+						if(typeof msg.debug == 'boolean') { mdebug = msg.debug }
 
 						if(typeof msg.connection == 'string') {
 							if(msg.connection) {
@@ -271,6 +273,16 @@ module.exports = function(RED) {
 
 							if(method == 'GET') { body = null }
 
+							// Emits request/response data via node.warn when Debug mode is on.
+							const debugLog = (label, requrl, respBody) => {
+								if (!mdebug) { return; }
+								if (label === 'request') {
+									node.warn({ request: { method: method, url: requrl, body: body } });
+								} else {
+									node.warn({ response: respBody });
+								}
+							};
+
 							// Handles an error response. When the second output is enabled
 							// (data.useerror) the error is routed to output 2, otherwise it is
 							// only reported via node.warn (the original behaviour).
@@ -326,11 +338,14 @@ module.exports = function(RED) {
 
 									let eurl = encodeURI(url + 'limit=' + mpaging +'&offset=' + offset)
 
+									debugLog('request', eurl);
+
                                     const response = await fetchWithRetry(eurl, { headers, method, body }, repeat, rdelay, node, apiLimit);
-							
+
 									if(response && response.status >= 200 && response.status < 300) {
-										
+
 										const body = await response.json();
+										debugLog('response', null, body);
 										offset = body?.metadata?.nextOffset
 										metadata.count = metadata.count + parseInt(body?.metadata?.count)
 										metadata.limit = body?.metadata?.limit
@@ -372,7 +387,9 @@ module.exports = function(RED) {
 								}
 							}
 							
-							if(entity.split('_')[0] == 'r') { 
+							if(entity.split('_')[0] == 'r') {
+
+								debugLog('request', encodeURI(url));
 
                                 const response = await fetchWithRetry(encodeURI(url), { headers, method, body }, repeat, rdelay, node, apiLimit);
 
@@ -384,6 +401,7 @@ module.exports = function(RED) {
 									} else {
 										msg.payload = await response.json()
 									}
+									debugLog('response', null, msg.payload);
 									node.send(msg);
 								} else {
 									await sendError(response);
