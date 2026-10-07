@@ -27,6 +27,6 @@
     }
   },
   "dependencies": {
-    "nodemailer": "^6.9.13"
+    "nodemailer": "^10.0.15"
   }
 }
