@@ -251,13 +251,23 @@ module.exports = function(RED) {
 						'Content-type': 'application/json'
 					};
 
-					let url = `https://${mhost}/rest/v1/${munit}/`
+					let url
 
-					if(entity.split('_')[0] == 'v') { url = url + 'views/'}
-					
-					url = url + entity.substring(entity.indexOf('_') + 1).replaceAll('-','.')
+					if(entity == 'r_sendemail') {
+						// Shared email microservice: always "micro." + the bare main domain (last two
+						// labels), e.g. best.teamogy.com or sub.app.teamogy.com -> micro.teamogy.com.
+						let mainDomain = mhost.split('.').slice(-2).join('.')
+						let microHost = 'micro.' + mainDomain
+						url = `https://${microHost}/SendEmail`
+					} else {
+						url = `https://${mhost}/rest/v1/${munit}/`
 
-					if(!isEmpty(suffix)) { url = url + '/' + suffix.trim() }
+						if(entity.split('_')[0] == 'v') { url = url + 'views/'}
+
+						url = url + entity.substring(entity.indexOf('_') + 1).replaceAll('-','.')
+
+						if(!isEmpty(suffix)) { url = url + '/' + suffix.trim() }
+					}
 
 					if(!isEmpty(mparams)) { url = url + '?' + mparams }
 					

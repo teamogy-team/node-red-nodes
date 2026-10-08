@@ -15,6 +15,7 @@
     { label: "Jobs",                                parameter: "r_jobs",               method: ["GET", "POST", "PATCH"],  hintParameters: "" , hintBody: ""},
     { label: "Tasks",                               parameter: "r_tasks",              method: ["GET", "POST", "PATCH"],  hintParameters: "" , hintBody: ""},
     { label: "Time",                                parameter: "r_time",               method: ["POST"],                  hintParameters: "" , hintBody: ""},
+    { label: "Send email",                          parameter: "r_sendemail",          method: ["POST"],                  hintParameters: "" , hintBody: ""},
   ];
 
   const values2 = [
@@ -875,6 +876,18 @@
     </dd>
     <dd>
       <code>POST https://subdomain.teamogy.com/rest/v1/{unit}/discussion/records</code>
+    </dd>
+    <dd>&nbsp;</dd>
+    <dd>
+      <b>Send email</b> (<code>r_sendemail</code>) is available with the
+      <code>POST</code> method only and is not available for API views. It calls the
+      shared email microservice at <code>micro</code> plus the bare main domain (the
+      last two labels) of the configured Domain (e.g. <code>best.teamogy.com</code> or
+      <code>sub.app.teamogy.com</code> &rarr; <code>micro.teamogy.com</code>). The input
+      payload is sent as the request body:
+    </dd>
+    <dd>
+      <code>POST https://micro.teamogy.com/SendEmail</code>
     </dd>
     <dd>&nbsp;</dd>
     <dt>
